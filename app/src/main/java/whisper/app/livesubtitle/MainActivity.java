@@ -492,11 +492,11 @@ public class MainActivity extends AppCompatActivity {
         DISPLAY_METRIC.DISPLAY_DENSITY = d;
 
         RECOGNIZING_STATUS.IS_RECOGNIZING = false;
-        OVERLAYING_STATUS.IS_OVERLAYING = false;
+        MIC_BUTTON_STATUS.IS_OVERLAYING = false;
         RECOGNIZING_STATUS.STRING = "RECOGNIZING_STATUS.IS_RECOGNIZING = " + RECOGNIZING_STATUS.IS_RECOGNIZING;
         setText(textview_recognizing, RECOGNIZING_STATUS.STRING);
-        OVERLAYING_STATUS.STRING = "OVERLAYING_STATUS.IS_OVERLAYING = " + OVERLAYING_STATUS.IS_OVERLAYING;
-        textview_overlaying.setText(OVERLAYING_STATUS.STRING);
+        MIC_BUTTON_STATUS.STRING = "MIC_BUTTON_STATUS.IS_OVERLAYING = " + MIC_BUTTON_STATUS.IS_OVERLAYING;
+        textview_overlaying.setText(MIC_BUTTON_STATUS.STRING);
 
         NotificationManager notificationManager = (NotificationManager) this.getSystemService(Context.NOTIFICATION_SERVICE);
         if (!notificationManager.isNotificationPolicyAccessGranted()) {
@@ -526,7 +526,7 @@ public class MainActivity extends AppCompatActivity {
         mediaProjectionLauncher = registerForActivityResult(new ActivityResultContracts.StartActivityForResult(), result -> {
                     if (result.getResultCode() != Activity.RESULT_OK) {
                         Log.e("MediaProjection", "User denied MediaProjection");
-                        OVERLAYING_STATUS.IS_OVERLAYING = false;
+                        MIC_BUTTON_STATUS.IS_OVERLAYING = false;
                         RECOGNIZING_STATUS.IS_RECOGNIZING = false;
                         stop_create_overlay_mic_button();
                         stop_create_overlay_translation_text();
@@ -535,7 +535,7 @@ public class MainActivity extends AppCompatActivity {
                     Intent data = result.getData();
                     if (data == null) {
                         Log.e("MediaProjection", "MediaProjection data is null");
-                        OVERLAYING_STATUS.IS_OVERLAYING = false;
+                        MIC_BUTTON_STATUS.IS_OVERLAYING = false;
                         RECOGNIZING_STATUS.IS_RECOGNIZING = false;
                         stop_create_overlay_mic_button();
                         stop_create_overlay_translation_text();
@@ -674,7 +674,7 @@ public class MainActivity extends AppCompatActivity {
                          * =========================================================
                          */
 
-                        if (languageChanged && OVERLAYING_STATUS.IS_OVERLAYING) {
+                        if (languageChanged && MIC_BUTTON_STATUS.IS_OVERLAYING) {
                             Intent serviceIntent = new Intent(MainActivity.this, AudioCaptureService.class);
                             serviceIntent.setAction(AudioCaptureService.ACTION_LANGUAGE_CHANGED);
                             startService(serviceIntent);
@@ -689,8 +689,8 @@ public class MainActivity extends AppCompatActivity {
 
                         RECOGNIZING_STATUS.STRING = "RECOGNIZING_STATUS.IS_RECOGNIZING = " + RECOGNIZING_STATUS.IS_RECOGNIZING;
                         setText(textview_recognizing, RECOGNIZING_STATUS.STRING);
-                        OVERLAYING_STATUS.STRING = "OVERLAYING_STATUS.IS_OVERLAYING = " + OVERLAYING_STATUS.IS_OVERLAYING;
-                        textview_overlaying.setText(OVERLAYING_STATUS.STRING);
+                        MIC_BUTTON_STATUS.STRING = "MIC_BUTTON_STATUS.IS_OVERLAYING = " + MIC_BUTTON_STATUS.IS_OVERLAYING;
+                        textview_overlaying.setText(MIC_BUTTON_STATUS.STRING);
                     }
 
 
@@ -743,11 +743,11 @@ public class MainActivity extends AppCompatActivity {
 
         button_toggle_overlay.setOnTouchListener((v, e) -> {
             if (e.getAction() == MotionEvent.ACTION_DOWN) {
-                OVERLAYING_STATUS.IS_OVERLAYING = !OVERLAYING_STATUS.IS_OVERLAYING;
-                OVERLAYING_STATUS.STRING =  "OVERLAYING_STATUS.IS_OVERLAYING = " + OVERLAYING_STATUS.IS_OVERLAYING;
-                setText(textview_overlaying, OVERLAYING_STATUS.STRING);
+                MIC_BUTTON_STATUS.IS_OVERLAYING = !MIC_BUTTON_STATUS.IS_OVERLAYING;
+                MIC_BUTTON_STATUS.STRING =  "MIC_BUTTON_STATUS.IS_OVERLAYING = " + MIC_BUTTON_STATUS.IS_OVERLAYING;
+                setText(textview_overlaying, MIC_BUTTON_STATUS.STRING);
 
-                if (OVERLAYING_STATUS.IS_OVERLAYING) {
+                if (MIC_BUTTON_STATUS.IS_OVERLAYING) {
                     if (Settings.canDrawOverlays(getApplicationContext())) {
                         start_create_overlay_mic_button();
                         start_create_overlay_translation_text();
@@ -762,19 +762,19 @@ public class MainActivity extends AppCompatActivity {
                             if (Settings.canDrawOverlays(getApplicationContext())) {
                                 start_create_overlay_mic_button();
                                 start_create_overlay_translation_text();
-                                OVERLAYING_STATUS.IS_OVERLAYING = true;
+                                MIC_BUTTON_STATUS.IS_OVERLAYING = true;
                                 String os = "Overlay permission granted";
                                 setText(textview_output_messages, os);
                                 // Setelah overlay permission tersedia,
                                 // baru minta MediaProjection.
                                 requestMediaProjectionForOverlay();
                             } else {
-                                OVERLAYING_STATUS.IS_OVERLAYING = false;
+                                MIC_BUTTON_STATUS.IS_OVERLAYING = false;
                                 String os = "Please retry to tap TOGGLE OVERLAY button again";
                                 setText(textview_output_messages, os);
                             }
-                            OVERLAYING_STATUS.STRING = "OVERLAYING_STATUS.IS_OVERLAYING = " + OVERLAYING_STATUS.IS_OVERLAYING;
-                            setText(textview_overlaying, OVERLAYING_STATUS.STRING);
+                            MIC_BUTTON_STATUS.STRING = "MIC_BUTTON_STATUS.IS_OVERLAYING = " + MIC_BUTTON_STATUS.IS_OVERLAYING;
+                            setText(textview_overlaying, MIC_BUTTON_STATUS.STRING);
                         }, 15000);
                     }
                 } else {
@@ -784,8 +784,8 @@ public class MainActivity extends AppCompatActivity {
                     RECOGNIZING_STATUS.IS_RECOGNIZING = false;
                     RECOGNIZING_STATUS.STRING = "RECOGNIZING_STATUS.IS_RECOGNIZING = " + RECOGNIZING_STATUS.IS_RECOGNIZING;
                     setText(textview_recognizing, RECOGNIZING_STATUS.STRING);
-                    OVERLAYING_STATUS.STRING = "OVERLAYING_STATUS.IS_OVERLAYING = " + OVERLAYING_STATUS.IS_OVERLAYING;
-                    setText(textview_overlaying, OVERLAYING_STATUS.STRING);
+                    MIC_BUTTON_STATUS.STRING = "MIC_BUTTON_STATUS.IS_OVERLAYING = " + MIC_BUTTON_STATUS.IS_OVERLAYING;
+                    setText(textview_overlaying, MIC_BUTTON_STATUS.STRING);
                     setText(textview_output_messages, "");
                     VOICE_TEXT.STRING = "";
                     TRANSLATION_TEXT.STRING = "";
@@ -807,8 +807,8 @@ public class MainActivity extends AppCompatActivity {
                     setText(voice_text, "");
                     RECOGNIZING_STATUS.STRING = "RECOGNIZING_STATUS.IS_RECOGNIZING = " + RECOGNIZING_STATUS.IS_RECOGNIZING;
                     setText(textview_recognizing, RECOGNIZING_STATUS.STRING);
-                    OVERLAYING_STATUS.STRING = "OVERLAYING_STATUS.IS_OVERLAYING = " + OVERLAYING_STATUS.IS_OVERLAYING;
-                    setText(textview_overlaying, OVERLAYING_STATUS.STRING);
+                    MIC_BUTTON_STATUS.STRING = "MIC_BUTTON_STATUS.IS_OVERLAYING = " + MIC_BUTTON_STATUS.IS_OVERLAYING;
+                    setText(textview_overlaying, MIC_BUTTON_STATUS.STRING);
                     voice_text.setHint("Recognized words");
                     full_voice_text.setHint("Recognized sentences");
                 }

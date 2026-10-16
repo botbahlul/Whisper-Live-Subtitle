@@ -121,8 +121,8 @@ public class AudioCaptureService extends Service {
         String src_dialect = LANGUAGE.SRC_DIALECT;
         RECOGNIZING_STATUS.STRING = "RECOGNIZING_STATUS.IS_RECOGNIZING = " + RECOGNIZING_STATUS.IS_RECOGNIZING;
         MainActivity.textview_recognizing.setText(RECOGNIZING_STATUS.STRING);
-        OVERLAYING_STATUS.STRING = "OVERLAYING_STATUS.IS_OVERLAYING = " + OVERLAYING_STATUS.IS_OVERLAYING;
-        MainActivity.textview_overlaying.setText(OVERLAYING_STATUS.STRING);
+        MIC_BUTTON_STATUS.STRING = "MIC_BUTTON_STATUS.IS_OVERLAYING = " + MIC_BUTTON_STATUS.IS_OVERLAYING;
+        MainActivity.textview_overlaying.setText(MIC_BUTTON_STATUS.STRING);
         // =========================================================
         // ENDPOINT TEST
         // =========================================================
@@ -462,7 +462,7 @@ public class AudioCaptureService extends Service {
         });
     }
 
-    private String GoogleTranslate1(String SENTENCE, String SRC, String DST) {
+    private String GoogleTranslate2(String SENTENCE, String SRC, String DST) {
         if (SENTENCE == null || SENTENCE.length() == 0) {
             return "";
         }
@@ -596,7 +596,7 @@ public class AudioCaptureService extends Service {
         }
     }
 
-    private String GoogleTranslate2(String SENTENCE, String SRC, String DST) {
+    private String GoogleTranslate1(String SENTENCE, String SRC, String DST) {
 
         Future<String> future = translationExecutor.submit(() -> {
             HttpClient httpClient = null;
@@ -948,6 +948,7 @@ public class AudioCaptureService extends Service {
 
                 handler.post(() -> {
                     translatedLastVoiceString = TRANSLATION.toString();
+
                     if (RECOGNIZING_STATUS.IS_RECOGNIZING) {
                         create_overlay_translation_text.overlay_full_translation_text_container.setVisibility(View.VISIBLE);
                         create_overlay_translation_text.overlay_full_translation_text_container.setBackgroundColor(Color.parseColor("#80000000"));
@@ -1042,7 +1043,7 @@ public class AudioCaptureService extends Service {
                                 MainActivity.voice_text.setSelection(MainActivity.voice_text.getText().length());
                                 if (!VOICE_TEXT.STRING.isEmpty()) {
                                     lastVoiceString = VOICE_TEXT.STRING + ".\n";
-                                    //Log.d(TAG, "onEndOfSpeech: lastVoiceString = VOICE_TEXT.STRING = " + lastVoiceString);
+                                    Log.d(TAG, "onEndOfSpeech: lastVoiceString = VOICE_TEXT.STRING = " + lastVoiceString);
                                 }
                                 if (MainActivity.full_voice_text != null && !lastVoiceString.isEmpty()) {
                                     appendText(MainActivity.full_voice_text, lastVoiceString);

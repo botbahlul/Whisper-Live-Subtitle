@@ -43,9 +43,9 @@ public class create_overlay_mic_button extends Service {
             RECOGNIZING_STATUS.IS_RECOGNIZING = false;
             RECOGNIZING_STATUS.STRING = "RECOGNIZING_STATUS.IS_RECOGNIZING = " + RECOGNIZING_STATUS.IS_RECOGNIZING;
             MainActivity.textview_recognizing.setText(RECOGNIZING_STATUS.STRING);
-            OVERLAYING_STATUS.IS_OVERLAYING = false;
-            OVERLAYING_STATUS.STRING = "OVERLAYING_STATUS.IS_OVERLAYING = " + OVERLAYING_STATUS.IS_OVERLAYING;
-            MainActivity.textview_overlaying.setText(OVERLAYING_STATUS.STRING);
+            MIC_BUTTON_STATUS.IS_OVERLAYING = false;
+            MIC_BUTTON_STATUS.STRING = "MIC_BUTTON_STATUS.IS_OVERLAYING = " + MIC_BUTTON_STATUS.IS_OVERLAYING;
+            MainActivity.textview_overlaying.setText(MIC_BUTTON_STATUS.STRING);
             MainActivity.textview_debug.setText("");
             VOICE_TEXT.STRING = "";
             TRANSLATION_TEXT.STRING = "";
@@ -72,8 +72,8 @@ public class create_overlay_mic_button extends Service {
         MainActivity.voice_text.setText("");
         RECOGNIZING_STATUS.STRING = "RECOGNIZING_STATUS.IS_RECOGNIZING = " + RECOGNIZING_STATUS.IS_RECOGNIZING;
         MainActivity.textview_recognizing.setText(RECOGNIZING_STATUS.STRING);
-        OVERLAYING_STATUS.STRING = "OVERLAYING_STATUS.IS_OVERLAYING = " + OVERLAYING_STATUS.IS_OVERLAYING;
-        MainActivity.textview_overlaying.setText(OVERLAYING_STATUS.STRING);
+        MIC_BUTTON_STATUS.STRING = "MIC_BUTTON_STATUS.IS_OVERLAYING = " + MIC_BUTTON_STATUS.IS_OVERLAYING;
+        MainActivity.textview_overlaying.setText(MIC_BUTTON_STATUS.STRING);
         String hints = "Recognized words";
         MainActivity.voice_text.setHint(hints);
     }
@@ -99,8 +99,8 @@ public class create_overlay_mic_button extends Service {
                         RECOGNIZING_STATUS.IS_RECOGNIZING = !RECOGNIZING_STATUS.IS_RECOGNIZING;
                         RECOGNIZING_STATUS.STRING = "RECOGNIZING_STATUS.IS_RECOGNIZING = " + RECOGNIZING_STATUS.IS_RECOGNIZING;
                         MainActivity.textview_recognizing.setText(RECOGNIZING_STATUS.STRING);
-                        OVERLAYING_STATUS.STRING = "OVERLAYING_STATUS.IS_OVERLAYING = " + OVERLAYING_STATUS.IS_OVERLAYING;
-                        MainActivity.textview_overlaying.setText(OVERLAYING_STATUS.STRING);
+                        MIC_BUTTON_STATUS.STRING = "MIC_BUTTON_STATUS.IS_OVERLAYING = " + MIC_BUTTON_STATUS.IS_OVERLAYING;
+                        MainActivity.textview_overlaying.setText(MIC_BUTTON_STATUS.STRING);
                         MainActivity.textview_debug.setText("");
                         MainActivity.textview_output_messages.setText("");
                         if (!RECOGNIZING_STATUS.IS_RECOGNIZING) {
