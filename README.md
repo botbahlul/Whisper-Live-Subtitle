@@ -3,7 +3,7 @@ ANDROID APP that can RECOGNIZE ANY LIVE AUDIO/VIDEO STREAMING (using Tiny Whispe
 
 If you want to test another model, just replace them in app/src.main/assets/whisper and then modify the file app\src\main\java\whisper\k2fsa\sherpa\onnx\OfflineRecognizer.kt
 
-if the model you want to test has already listed there you can just use it, and if not just change this part :
+if the model you want to test has already listed there you can just use it in function initOfflineRecognizer() in AudioCaptureService.java, and if not just change this part of OfflineRecognizer.kt:
 
         100 -> {
             val modelDir = "whisper"
