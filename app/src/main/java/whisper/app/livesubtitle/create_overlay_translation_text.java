@@ -128,7 +128,7 @@ public class create_overlay_translation_text extends Service {
                 overlayWidth,
                 overlayHeight,
                 0,
-                fullTranslationY,
+                fullTranslationY - 8,
                 null,
                 null,
                 new GlobalOverlay.OnRemoveOverlayListener() {
@@ -142,7 +142,7 @@ public class create_overlay_translation_text extends Service {
                 overlayWidth,
                 overlayHeight,
                 0,
-                translationY-4,
+                translationY,
                 null,
                 null,
                 new GlobalOverlay.OnRemoveOverlayListener() {
