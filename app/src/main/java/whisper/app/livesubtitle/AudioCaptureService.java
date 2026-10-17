@@ -149,12 +149,7 @@ public class AudioCaptureService extends Service {
     }
 
     @Override
-    public int onStartCommand(
-            Intent intent,
-            int flags,
-            int startId
-    ) {
-
+    public int onStartCommand(Intent intent, int flags, int startId) {
         if (intent == null) {
             return START_NOT_STICKY;
         }
@@ -162,22 +157,17 @@ public class AudioCaptureService extends Service {
         String action = intent.getAction();
 
         if (ACTION_PREPARE_CAPTURE.equals(action)) {
-
             preparePlaybackCapture(intent);
 
         } else if (ACTION_START_CAPTURE.equals(action)) {
-
             startAudioCapture();
 
         } else if (ACTION_STOP_CAPTURE.equals(action)) {
-
             stopAudioCapture();
 
         } else if (ACTION_LANGUAGE_CHANGED.equals(action)) {
-
             restartRecognitionForLanguageChange();
         }
-
         return START_STICKY;
     }
 
@@ -341,11 +331,58 @@ public class AudioCaptureService extends Service {
     private void testGoogleTranslateEndpoints() {
         ExecutorService executor = Executors.newSingleThreadExecutor();
         executor.execute(() -> {
-            boolean endpoint1OK = false;
-            boolean endpoint2OK = false;
+            boolean SELECT_ENDPOINT_1 = false;
+            boolean SELECT_ENDPOINT_2 = false;
             HttpClient httpClient = null;
             // =========================================================
             // TEST ENDPOINT 1
+            // https://clients5.google.com/translate_a/t
+            // =========================================================
+            try {
+                String testSentence = URLEncoder.encode("Hello", "UTF-8");
+                String url =
+                        "https://clients5.google.com/translate_a/t" +
+                                "?client=dict-chrome-ex" +
+                                "&sl=en" +
+                                "&tl=id" +
+                                "&q=" + testSentence;
+                Log.d("testGoogleTranslate", "Testing endpoint 1: " + url);
+                httpClient = new DefaultHttpClient();
+                HttpGet httpget = new HttpGet(url);
+                httpget.setHeader(
+                        "User-Agent",
+                        "Mozilla/5.0 (Windows NT 10.0; Win64; x64) " +
+                                "AppleWebKit/537.36 (KHTML, like Gecko) " +
+                                "Chrome/139.0.0.0 Safari/537.36"
+                );
+                HttpResponse response = httpClient.execute(httpget);
+                StatusLine statusLine = response.getStatusLine();
+                Log.d("testGoogleTranslate", "Endpoint 1 status code: " + statusLine.getStatusCode());
+                if (statusLine.getStatusCode() == 200) {
+                    if (response.getEntity() != null) {
+                        ByteArrayOutputStream output = new ByteArrayOutputStream();
+                        response.getEntity().writeTo(output);
+                        String responseString = output.toString("UTF-8");
+                        output.close();
+                        Log.d("testGoogleTranslate", "Endpoint 1 response: " + responseString);
+                        JSONArray jsonArray = new JSONArray(responseString);
+                        if (jsonArray.length() > 0) {
+                            SELECT_ENDPOINT_1 = true;
+                        }
+                    }
+                }
+
+            } catch (Exception e) {
+                Log.e("testGoogleTranslate", "Endpoint 1 FAILED",e);
+
+            } finally {
+                if (httpClient != null) {
+                    httpClient.getConnectionManager().shutdown();
+                }
+            }
+
+            // =========================================================
+            // TEST ENDPOINT 2
             // https://translate.googleapis.com/translate_a/single
             // =========================================================
             try {
@@ -357,14 +394,12 @@ public class AudioCaptureService extends Service {
                                 "&tl=id" +
                                 "&dt=t" +
                                 "&q=" + testSentence;
-
-                Log.d("GoogleTranslator", "Testing endpoint 1: " + url);
-
+                Log.d("testGoogleTranslate", "Testing endpoint 2: " + url);
                 httpClient = new DefaultHttpClient();
                 HttpGet httpget = new HttpGet(url);
                 HttpResponse response = httpClient.execute(httpget);
                 StatusLine statusLine = response.getStatusLine();
-                Log.d("GoogleTranslator", "Endpoint 1 HTTP: " + statusLine.getStatusCode());
+                Log.d("testGoogleTranslate", "Endpoint 2 status code: " + statusLine.getStatusCode());
 
                 if (statusLine.getStatusCode() == 200) {
                     if (response.getEntity() != null) {
@@ -372,16 +407,17 @@ public class AudioCaptureService extends Service {
                         response.getEntity().writeTo(output);
                         String responseString = output.toString("UTF-8");
                         output.close();
-                        Log.d("GoogleTranslator", "Endpoint 1 response: " + responseString);
-                        // Pastikan response memang JSON array
+                        Log.d("testGoogleTranslate", "Endpoint 2 response: " +responseString);
                         JSONArray jsonArray = new JSONArray(responseString);
                         if (jsonArray.length() > 0) {
-                            endpoint1OK = true;
+                            SELECT_ENDPOINT_2 = true;
                         }
                     }
                 }
+
             } catch (Exception e) {
-                Log.e("GoogleTranslator", "Endpoint 1 FAILED", e);
+                Log.e("testGoogleTranslate", "Endpoint 2 FAILED", e);
+
             } finally {
                 if (httpClient != null) {
                     httpClient.getConnectionManager().shutdown();
@@ -391,209 +427,25 @@ public class AudioCaptureService extends Service {
             // =========================================================
             // If endpoint 1 success,choose endpoint 1
             // =========================================================
-            if (endpoint1OK) {
+            if (SELECT_ENDPOINT_1) {
                 GOOGLE_TRANSLATE_ENDPOINT.CONFIG = 1;
-                Log.d("GoogleTranslator", "SELECTED ENDPOINT = 1");
+                Log.d("testGoogleTranslate", "SELECTED ENDPOINT = 1");
                 executor.shutdown();
                 return;
             }
 
             // =========================================================
-            // TEST ENDPOINT 2
-            // https://clients5.google.com/translate_a/t
-            // =========================================================
-            try {
-
-                String testSentence = URLEncoder.encode("Hello", "UTF-8");
-
-                String url =
-                        "https://clients5.google.com/translate_a/t" +
-                                "?client=dict-chrome-ex" +
-                                "&sl=en" +
-                                "&tl=id" +
-                                "&q=" + testSentence;
-
-                Log.d("GoogleTranslator","Testing endpoint 2: " + url);
-
-                httpClient = new DefaultHttpClient();
-                HttpGet httpget = new HttpGet(url);
-                httpget.setHeader(
-                        "User-Agent",
-                        "Mozilla/5.0 (Windows NT 10.0; Win64; x64) " +
-                                "AppleWebKit/537.36 (KHTML, like Gecko) " +
-                                "Chrome/139.0.0.0 Safari/537.36"
-                );
-
-                HttpResponse response = httpClient.execute(httpget);
-                StatusLine statusLine = response.getStatusLine();
-                Log.d("GoogleTranslator", "Endpoint 2 HTTP: " + statusLine.getStatusCode());
-                if (statusLine.getStatusCode() == 200) {
-                    if (response.getEntity() != null) {
-                        ByteArrayOutputStream output = new ByteArrayOutputStream();
-                        response.getEntity().writeTo(output);
-                        String responseString = output.toString("UTF-8");
-                        output.close();
-                        Log.d("GoogleTranslator", "Endpoint 2 response: " + responseString);
-                        JSONArray jsonArray = new JSONArray(responseString);
-                        if (jsonArray.length() > 0) {
-                            endpoint2OK = true;
-                        }
-                    }
-                }
-            } catch (Exception e) {
-                Log.e("GoogleTranslator", "Endpoint 2 FAILED", e);
-            } finally {
-                if (httpClient != null) {
-                    httpClient.getConnectionManager().shutdown();
-                }
-            }
-
-            // =========================================================
             // CHOOSE FINAL ENDPOINT
             // =========================================================
-            if (endpoint2OK) {
+            if (SELECT_ENDPOINT_2) {
                 GOOGLE_TRANSLATE_ENDPOINT.CONFIG = 2;
-                Log.d("GoogleTranslator", "SELECTED ENDPOINT = 2");
+                Log.d("testGoogleTranslate", "SELECTED ENDPOINT = 2");
             } else {
                 GOOGLE_TRANSLATE_ENDPOINT.CONFIG = -1;
-                Log.e("GoogleTranslator", "BOTH GOOGLE TRANSLATE ENDPOINTS FAILED");
+                Log.e("testGoogleTranslate", "BOTH GOOGLE TRANSLATE ENDPOINTS FAILED");
             }
             executor.shutdown();
         });
-    }
-
-    private String GoogleTranslate2(String SENTENCE, String SRC, String DST) {
-        if (SENTENCE == null || SENTENCE.length() == 0) {
-            return "";
-        }
-        if (!RECOGNIZING_STATUS.IS_RECOGNIZING) {
-            return "";
-        }
-        if (translationExecutor == null || translationExecutor.isShutdown()) {
-            Log.e("GoogleTranslator", "translationExecutor is not available");
-            return "";
-        }
-
-        final Handler handler = new Handler(Looper.getMainLooper());
-        final String finalSENTENCE;
-
-        try {
-            finalSENTENCE = URLEncoder.encode(SENTENCE, "UTF-8");
-        } catch (UnsupportedEncodingException e) {
-            Log.e("GoogleTranslate1", "URL encoding failed", e);
-            return "";
-        }
-
-        Future<String> future = translationExecutor.submit(() -> {
-            StringBuilder translation = new StringBuilder();
-            HttpClient httpClient = null;
-            try {
-                String url = "https://translate.googleapis.com/translate_a/";
-                String params =
-                        "single?client=gtx"
-                                + "&sl=" + SRC
-                                + "&tl=" + DST
-                                + "&dt=t"
-                                + "&q=" + finalSENTENCE;
-
-                httpClient = new DefaultHttpClient();
-                HttpGet httpGet = new HttpGet(url + params);
-                HttpResponse response = httpClient.execute(httpGet);
-                StatusLine statusLine = response.getStatusLine();
-                if (statusLine.getStatusCode() == 200) {
-                    ByteArrayOutputStream byteArrayOutputStream = new ByteArrayOutputStream();
-                    try {
-                        response.getEntity().writeTo(byteArrayOutputStream);
-                        String responseString = byteArrayOutputStream.toString("UTF-8");
-                        Log.d("GoogleTranslator", "GoogleTranslate1 Response: " + responseString);
-                        JSONArray jsonArray = new JSONArray(responseString);
-                        JSONArray sentences = jsonArray.getJSONArray(0);
-                        int length = sentences.length();
-                        for (int i = 0; i < length; i++) {
-                            JSONArray item = sentences.getJSONArray(i);
-                            if (!item.isNull(0)) {
-                                translation.append(item.getString(0));
-                            }
-                        }
-                    } finally {
-                        byteArrayOutputStream.close();
-                    }
-
-                } else {
-                    Log.e("GoogleTranslator",
-                            "HTTP "
-                                    + statusLine.getStatusCode()
-                                    + ": "
-                                    + statusLine.getReasonPhrase()
-                    );
-
-                    if (response.getEntity() != null) {
-                        response.getEntity()
-                                .getContent()
-                                .close();
-                    }
-
-                    throw new IOException(
-                            "HTTP "
-                                    + statusLine.getStatusCode()
-                                    + ": "
-                                    + statusLine.getReasonPhrase()
-                    );
-                }
-
-            } catch (Exception e) {
-                Log.e("GoogleTranslate1", "Translation error", e);
-
-            } finally {
-                if (httpClient != null) {
-                    httpClient.getConnectionManager().shutdown();
-                }
-            }
-            return translation.toString();
-        });
-
-        try {
-            String result = future.get();
-            if (result == null) {
-                result = "";
-            }
-            final String translatedText = result;
-            Log.d("GoogleTranslator", "GoogleTranslate1 result = " + translatedText );
-
-             // Update overlay on Android main thread.
-            handler.post(() -> {
-                if (!RECOGNIZING_STATUS.IS_RECOGNIZING) {
-                    create_overlay_translation_text.overlay_translation_text.setVisibility(View.INVISIBLE);
-                    create_overlay_translation_text.overlay_translation_text_container.setVisibility(View.INVISIBLE);
-                    return;
-                }
-
-                TRANSLATION_TEXT.STRING = translatedText;
-
-                if (TRANSLATION_TEXT.STRING.length() == 0) {
-                    create_overlay_translation_text.overlay_translation_text.setVisibility(View.INVISIBLE);
-                    create_overlay_translation_text.overlay_translation_text_container.setVisibility(View.INVISIBLE);
-                } else {
-                    create_overlay_translation_text.overlay_translation_text_container.setVisibility(View.VISIBLE);
-                    create_overlay_translation_text.overlay_translation_text_container.setBackgroundColor(Color.TRANSPARENT);
-                    create_overlay_translation_text.overlay_translation_text.setVisibility(View.VISIBLE);
-                    create_overlay_translation_text.overlay_translation_text.setBackgroundColor(Color.TRANSPARENT);
-                    create_overlay_translation_text.overlay_translation_text.setTextIsSelectable(true);
-                    create_overlay_translation_text.overlay_translation_text.setText(TRANSLATION_TEXT.STRING);
-                    create_overlay_translation_text.overlay_translation_text.setSelection(create_overlay_translation_text.overlay_translation_text.getText().length());
-                }
-            });
-            return result;
-
-        } catch (InterruptedException e) {
-            Thread.currentThread().interrupt();
-            Log.e("GoogleTranslate1", "Translation interrupted", e);
-            return "";
-
-        } catch (ExecutionException e) {
-            Log.e("GoogleTranslate1", "Translation execution failed", e);
-            return "";
-        }
     }
 
     private String GoogleTranslate1(String SENTENCE, String SRC, String DST) {
@@ -801,6 +653,140 @@ public class AudioCaptureService extends Service {
 
         } catch (ExecutionException e) {
             Log.e("GoogleTranslator", "GoogleTranslate2 failed", e);
+            return "";
+        }
+    }
+
+    private String GoogleTranslate2(String SENTENCE, String SRC, String DST) {
+        if (SENTENCE == null || SENTENCE.length() == 0) {
+            return "";
+        }
+        if (!RECOGNIZING_STATUS.IS_RECOGNIZING) {
+            return "";
+        }
+        if (translationExecutor == null || translationExecutor.isShutdown()) {
+            Log.e("GoogleTranslator", "translationExecutor is not available");
+            return "";
+        }
+
+        final Handler handler = new Handler(Looper.getMainLooper());
+        final String finalSENTENCE;
+
+        try {
+            finalSENTENCE = URLEncoder.encode(SENTENCE, "UTF-8");
+        } catch (UnsupportedEncodingException e) {
+            Log.e("GoogleTranslate1", "URL encoding failed", e);
+            return "";
+        }
+
+        Future<String> future = translationExecutor.submit(() -> {
+            StringBuilder translation = new StringBuilder();
+            HttpClient httpClient = null;
+            try {
+                String url = "https://translate.googleapis.com/translate_a/";
+                String params =
+                        "single?client=gtx"
+                                + "&sl=" + SRC
+                                + "&tl=" + DST
+                                + "&dt=t"
+                                + "&q=" + finalSENTENCE;
+
+                httpClient = new DefaultHttpClient();
+                HttpGet httpGet = new HttpGet(url + params);
+                HttpResponse response = httpClient.execute(httpGet);
+                StatusLine statusLine = response.getStatusLine();
+                if (statusLine.getStatusCode() == 200) {
+                    ByteArrayOutputStream byteArrayOutputStream = new ByteArrayOutputStream();
+                    try {
+                        response.getEntity().writeTo(byteArrayOutputStream);
+                        String responseString = byteArrayOutputStream.toString("UTF-8");
+                        Log.d("GoogleTranslator", "GoogleTranslate1 Response: " + responseString);
+                        JSONArray jsonArray = new JSONArray(responseString);
+                        JSONArray sentences = jsonArray.getJSONArray(0);
+                        int length = sentences.length();
+                        for (int i = 0; i < length; i++) {
+                            JSONArray item = sentences.getJSONArray(i);
+                            if (!item.isNull(0)) {
+                                translation.append(item.getString(0));
+                            }
+                        }
+                    } finally {
+                        byteArrayOutputStream.close();
+                    }
+
+                } else {
+                    Log.e("GoogleTranslator",
+                            "HTTP "
+                                    + statusLine.getStatusCode()
+                                    + ": "
+                                    + statusLine.getReasonPhrase()
+                    );
+
+                    if (response.getEntity() != null) {
+                        response.getEntity()
+                                .getContent()
+                                .close();
+                    }
+
+                    throw new IOException(
+                            "HTTP "
+                                    + statusLine.getStatusCode()
+                                    + ": "
+                                    + statusLine.getReasonPhrase()
+                    );
+                }
+
+            } catch (Exception e) {
+                Log.e("GoogleTranslate1", "Translation error", e);
+
+            } finally {
+                if (httpClient != null) {
+                    httpClient.getConnectionManager().shutdown();
+                }
+            }
+            return translation.toString();
+        });
+
+        try {
+            String result = future.get();
+            if (result == null) {
+                result = "";
+            }
+            final String translatedText = result;
+            Log.d("GoogleTranslator", "GoogleTranslate1 result = " + translatedText );
+
+            // Update overlay on Android main thread.
+            handler.post(() -> {
+                if (!RECOGNIZING_STATUS.IS_RECOGNIZING) {
+                    create_overlay_translation_text.overlay_translation_text.setVisibility(View.INVISIBLE);
+                    create_overlay_translation_text.overlay_translation_text_container.setVisibility(View.INVISIBLE);
+                    return;
+                }
+
+                TRANSLATION_TEXT.STRING = translatedText;
+
+                if (TRANSLATION_TEXT.STRING.length() == 0) {
+                    create_overlay_translation_text.overlay_translation_text.setVisibility(View.INVISIBLE);
+                    create_overlay_translation_text.overlay_translation_text_container.setVisibility(View.INVISIBLE);
+                } else {
+                    create_overlay_translation_text.overlay_translation_text_container.setVisibility(View.VISIBLE);
+                    create_overlay_translation_text.overlay_translation_text_container.setBackgroundColor(Color.TRANSPARENT);
+                    create_overlay_translation_text.overlay_translation_text.setVisibility(View.VISIBLE);
+                    create_overlay_translation_text.overlay_translation_text.setBackgroundColor(Color.TRANSPARENT);
+                    create_overlay_translation_text.overlay_translation_text.setTextIsSelectable(true);
+                    create_overlay_translation_text.overlay_translation_text.setText(TRANSLATION_TEXT.STRING);
+                    create_overlay_translation_text.overlay_translation_text.setSelection(create_overlay_translation_text.overlay_translation_text.getText().length());
+                }
+            });
+            return result;
+
+        } catch (InterruptedException e) {
+            Thread.currentThread().interrupt();
+            Log.e("GoogleTranslate1", "Translation interrupted", e);
+            return "";
+
+        } catch (ExecutionException e) {
+            Log.e("GoogleTranslate1", "Translation execution failed", e);
             return "";
         }
     }
@@ -1386,14 +1372,7 @@ public class AudioCaptureService extends Service {
         }
 
         RECOGNIZING_STATUS.IS_RECOGNIZING = true;
-        //lastText = "";
         vad.reset();
-
-        //synchronized (partialAudioLock) {
-        //    partialAudioBuffer.clear();
-        //}
-
-        //lastPartialRecognitionTime = 0;
 
         try {
             audioRecord.startRecording();
@@ -1434,12 +1413,6 @@ public class AudioCaptureService extends Service {
             recognitionExecutor.shutdownNow();
             recognitionExecutor = null;
         }
-
-        //synchronized (partialAudioLock) {
-        //    partialAudioBuffer.clear();
-        //}
-
-        //partialRecognitionRunning = false;
 
         Log.i(TAG, "Stopped AudioPlaybackCapture recording");
     }
