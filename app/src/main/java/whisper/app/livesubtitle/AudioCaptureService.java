@@ -866,7 +866,7 @@ public class AudioCaptureService extends Service {
                         create_overlay_translation_text.overlay_full_translation_text.setBackgroundColor(Color.TRANSPARENT);
                         create_overlay_translation_text.overlay_full_translation_text.setTextIsSelectable(true);
                         create_overlay_translation_text.overlay_full_translation_text.setHighlightColor(Color.TRANSPARENT);
-                        appendText(create_overlay_translation_text.overlay_full_translation_text, translatedLastVoiceString);
+                        appendText(create_overlay_translation_text.overlay_full_translation_text, "\n" + translatedLastVoiceString);
                         create_overlay_translation_text.overlay_full_translation_text.setSelection(create_overlay_translation_text.overlay_full_translation_text.getText().length());
                         create_overlay_translation_text.overlay_full_translation_text.setTextColor(Color.parseColor("#FF00FFFF"));
                         create_overlay_translation_text.overlay_full_translation_text.setGravity(Gravity.BOTTOM);
@@ -942,7 +942,7 @@ public class AudioCaptureService extends Service {
                         create_overlay_translation_text.overlay_full_translation_text.setBackgroundColor(Color.TRANSPARENT);
                         create_overlay_translation_text.overlay_full_translation_text.setTextIsSelectable(true);
                         create_overlay_translation_text.overlay_full_translation_text.setHighlightColor(Color.TRANSPARENT);
-                        appendText(create_overlay_translation_text.overlay_full_translation_text, translatedLastVoiceString);
+                        appendText(create_overlay_translation_text.overlay_full_translation_text, "\n" + translatedLastVoiceString);
                         create_overlay_translation_text.overlay_full_translation_text.setSelection(create_overlay_translation_text.overlay_full_translation_text.getText().length());
                         create_overlay_translation_text.overlay_full_translation_text.setTextColor(Color.parseColor("#FF00FFFF"));
                         create_overlay_translation_text.overlay_full_translation_text.setGravity(Gravity.BOTTOM);
@@ -1028,11 +1028,11 @@ public class AudioCaptureService extends Service {
                                 MainActivity.voice_text.setText(VOICE_TEXT.STRING);
                                 MainActivity.voice_text.setSelection(MainActivity.voice_text.getText().length());
                                 if (!VOICE_TEXT.STRING.isEmpty()) {
-                                    lastVoiceString = VOICE_TEXT.STRING + ".\n";
+                                    lastVoiceString = VOICE_TEXT.STRING;
                                     Log.d(TAG, "onEndOfSpeech: lastVoiceString = VOICE_TEXT.STRING = " + lastVoiceString);
                                 }
                                 if (MainActivity.full_voice_text != null && !lastVoiceString.isEmpty()) {
-                                    appendText(MainActivity.full_voice_text, lastVoiceString);
+                                    appendText(MainActivity.full_voice_text, "\n" + lastVoiceString);
                                     MainActivity.full_voice_text.setSelection(MainActivity.full_voice_text.getText().length());
                                     MainActivity.full_voice_text.setGravity(Gravity.BOTTOM);
                                     if (lastVoiceString != null && !Objects.equals(lastVoiceString, "")) {
