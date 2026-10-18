@@ -449,7 +449,6 @@ public class AudioCaptureService extends Service {
     }
 
     private String GoogleTranslate1(String SENTENCE, String SRC, String DST) {
-
         Future<String> future = translationExecutor.submit(() -> {
             HttpClient httpClient = null;
             try {
@@ -532,114 +531,29 @@ public class AudioCaptureService extends Service {
                 TRANSLATION_TEXT.STRING = translatedText;
                 Log.d("GoogleTranslator", "TRANSLATION_TEXT.STRING: " + TRANSLATION_TEXT.STRING);
                 if (RECOGNIZING_STATUS.IS_RECOGNIZING) {
-                    if (TRANSLATION_TEXT.STRING.length() == 0) {
-                        create_overlay_translation_text
-                                .overlay_translation_text
-                                .setVisibility(
-                                        View.INVISIBLE
-                                );
-                        create_overlay_translation_text
-                                .overlay_translation_text_container
-                                .setVisibility(
-                                        View.INVISIBLE
-                                );
-                    } else {
-                        create_overlay_translation_text
-                                .overlay_translation_text_container
-                                .setVisibility(
-                                        View.VISIBLE
-                                );
-
-                        create_overlay_translation_text
-                                .overlay_translation_text_container
-                                .setBackgroundColor(
-                                        Color.TRANSPARENT
-                                );
-
-                        create_overlay_translation_text
-                                .overlay_translation_text
-                                .setVisibility(
-                                        View.VISIBLE
-                                );
-
-                        create_overlay_translation_text
-                                .overlay_translation_text
-                                .setBackgroundColor(
-                                        Color.TRANSPARENT
-                                );
-
-                        create_overlay_translation_text
-                                .overlay_translation_text
-                                .setTextIsSelectable(
-                                        true
-                                );
-
-                        create_overlay_translation_text
-                                .overlay_translation_text
-                                .setText(
-                                        TRANSLATION_TEXT.STRING
-                                );
-
-                        create_overlay_translation_text
-                                .overlay_translation_text
-                                .setSelection(
-                                        create_overlay_translation_text
-                                                .overlay_translation_text
-                                                .getText()
-                                                .length()
-                                );
-
+                    if (create_overlay_translation_text.overlay_translation_text_container != null) {
+                        create_overlay_translation_text.overlay_translation_text_container.setVisibility(View.VISIBLE);
+                        create_overlay_translation_text.overlay_translation_text_container.setBackgroundColor(Color.parseColor("#80000000"));
+                        create_overlay_translation_text.overlay_translation_text.setVisibility(View.VISIBLE);
+                        create_overlay_translation_text.overlay_translation_text.setBackgroundColor(Color.TRANSPARENT);
+                        create_overlay_translation_text.overlay_translation_text.setTextIsSelectable(true);
+                        create_overlay_translation_text.overlay_translation_text.setHighlightColor(Color.TRANSPARENT);
+                        create_overlay_translation_text.overlay_translation_text.setText(TRANSLATION_TEXT.STRING);
+                        create_overlay_translation_text.overlay_translation_text.setSelection(create_overlay_translation_text.overlay_translation_text.getText().length());
+                        create_overlay_translation_text.overlay_translation_text.setTextColor(Color.parseColor("#FFFF00"));
+                        //android.util.Log.d("SubtitleDebug", "textColor=" + Integer.toHexString(create_overlay_translation_text.overlay_translation_text.getCurrentTextColor()) + ", alpha=" + create_overlay_translation_text.overlay_translation_text.getAlpha() + ", layerType=" + create_overlay_translation_text.overlay_translation_text.getLayerType() + ", backgroundAlpha=" + (create_overlay_translation_text.overlay_translation_text.getBackground() != null ? create_overlay_translation_text.overlay_translation_text.getBackground().getAlpha() : -1));
                         Spannable spannableString = new SpannableStringBuilder(TRANSLATION_TEXT.STRING);
                         int selectionEnd = create_overlay_translation_text.overlay_translation_text.getSelectionEnd();
-
-                        spannableString.setSpan(
-                                new ForegroundColorSpan(
-                                        Color.YELLOW
-                                ),
-                                0,
-                                selectionEnd,
-                                0
-                        );
-
-                        spannableString.setSpan(
-                                new BackgroundColorSpan(
-                                        Color.parseColor(
-                                                "#80000000"
-                                        )
-                                ),
-                                0,
-                                selectionEnd,
-                                0
-                        );
-
-                        create_overlay_translation_text
-                                .overlay_translation_text
-                                .setText(
-                                        spannableString
-                                );
-
-                        create_overlay_translation_text
-                                .overlay_translation_text
-                                .setSelection(
-                                        create_overlay_translation_text
-                                                .overlay_translation_text
-                                                .getText()
-                                                .length()
-                                );
+                        spannableString.setSpan(new ForegroundColorSpan(Color.parseColor("#FFFF00")), 0, selectionEnd,0);
+                        spannableString.setSpan(new BackgroundColorSpan(Color.parseColor("#80000000")), 0, selectionEnd, 0);
+                        create_overlay_translation_text.overlay_translation_text.setText(spannableString);
+                        create_overlay_translation_text.overlay_translation_text.setSelection(create_overlay_translation_text.overlay_translation_text.getText().length());
                     }
-
                 } else {
-                    create_overlay_translation_text
-                            .overlay_translation_text
-                            .setVisibility(
-                                    View.INVISIBLE
-                            );
-
-                    create_overlay_translation_text
-                            .overlay_translation_text_container
-                            .setVisibility(
-                                    View.INVISIBLE
-                            );
+                    if (create_overlay_translation_text.overlay_translation_text_container != null) {
+                        create_overlay_translation_text.overlay_translation_text.setVisibility(View.INVISIBLE);
+                        create_overlay_translation_text.overlay_translation_text_container.setVisibility(View.INVISIBLE);
+                    }
                 }
             });
 
@@ -715,25 +629,11 @@ public class AudioCaptureService extends Service {
                     }
 
                 } else {
-                    Log.e("GoogleTranslator",
-                            "HTTP "
-                                    + statusLine.getStatusCode()
-                                    + ": "
-                                    + statusLine.getReasonPhrase()
-                    );
-
+                    Log.e("GoogleTranslator", "HTTP " + statusLine.getStatusCode() + ": " + statusLine.getReasonPhrase());
                     if (response.getEntity() != null) {
-                        response.getEntity()
-                                .getContent()
-                                .close();
+                        response.getEntity().getContent().close();
                     }
-
-                    throw new IOException(
-                            "HTTP "
-                                    + statusLine.getStatusCode()
-                                    + ": "
-                                    + statusLine.getReasonPhrase()
-                    );
+                    throw new IOException("HTTP " + statusLine.getStatusCode() + ": " + statusLine.getReasonPhrase());
                 }
 
             } catch (Exception e) {
@@ -757,25 +657,31 @@ public class AudioCaptureService extends Service {
 
             // Update overlay on Android main thread.
             handler.post(() -> {
-                if (!RECOGNIZING_STATUS.IS_RECOGNIZING) {
-                    create_overlay_translation_text.overlay_translation_text.setVisibility(View.INVISIBLE);
-                    create_overlay_translation_text.overlay_translation_text_container.setVisibility(View.INVISIBLE);
-                    return;
-                }
-
                 TRANSLATION_TEXT.STRING = translatedText;
-
-                if (TRANSLATION_TEXT.STRING.length() == 0) {
-                    create_overlay_translation_text.overlay_translation_text.setVisibility(View.INVISIBLE);
-                    create_overlay_translation_text.overlay_translation_text_container.setVisibility(View.INVISIBLE);
+                if (RECOGNIZING_STATUS.IS_RECOGNIZING) {
+                    if (create_overlay_translation_text.overlay_translation_text_container != null) {
+                        create_overlay_translation_text.overlay_translation_text_container.setVisibility(View.VISIBLE);
+                        create_overlay_translation_text.overlay_translation_text_container.setBackgroundColor(Color.parseColor("#80000000"));
+                        create_overlay_translation_text.overlay_translation_text.setVisibility(View.VISIBLE);
+                        create_overlay_translation_text.overlay_translation_text.setBackgroundColor(Color.TRANSPARENT);
+                        create_overlay_translation_text.overlay_translation_text.setTextIsSelectable(true);
+                        create_overlay_translation_text.overlay_translation_text.setHighlightColor(Color.TRANSPARENT);
+                        create_overlay_translation_text.overlay_translation_text.setText(TRANSLATION_TEXT.STRING);
+                        create_overlay_translation_text.overlay_translation_text.setSelection(create_overlay_translation_text.overlay_translation_text.getText().length());
+                        create_overlay_translation_text.overlay_translation_text.setTextColor(Color.parseColor("#FFFF00"));
+                        //android.util.Log.d("SubtitleDebug", "textColor=" + Integer.toHexString(create_overlay_translation_text.overlay_translation_text.getCurrentTextColor()) + ", alpha=" + create_overlay_translation_text.overlay_translation_text.getAlpha() + ", layerType=" + create_overlay_translation_text.overlay_translation_text.getLayerType() + ", backgroundAlpha=" + (create_overlay_translation_text.overlay_translation_text.getBackground() != null ? create_overlay_translation_text.overlay_translation_text.getBackground().getAlpha() : -1));
+                        Spannable spannableString = new SpannableStringBuilder(TRANSLATION_TEXT.STRING);
+                        int selectionEnd = create_overlay_translation_text.overlay_translation_text.getSelectionEnd();
+                        spannableString.setSpan(new ForegroundColorSpan(Color.parseColor("#FFFF00")), 0, selectionEnd,0);
+                        spannableString.setSpan(new BackgroundColorSpan(Color.parseColor("#80000000")), 0, selectionEnd, 0);
+                        create_overlay_translation_text.overlay_translation_text.setText(spannableString);
+                        create_overlay_translation_text.overlay_translation_text.setSelection(create_overlay_translation_text.overlay_translation_text.getText().length());
+                    }
                 } else {
-                    create_overlay_translation_text.overlay_translation_text_container.setVisibility(View.VISIBLE);
-                    create_overlay_translation_text.overlay_translation_text_container.setBackgroundColor(Color.TRANSPARENT);
-                    create_overlay_translation_text.overlay_translation_text.setVisibility(View.VISIBLE);
-                    create_overlay_translation_text.overlay_translation_text.setBackgroundColor(Color.TRANSPARENT);
-                    create_overlay_translation_text.overlay_translation_text.setTextIsSelectable(true);
-                    create_overlay_translation_text.overlay_translation_text.setText(TRANSLATION_TEXT.STRING);
-                    create_overlay_translation_text.overlay_translation_text.setSelection(create_overlay_translation_text.overlay_translation_text.getText().length());
+                    if (create_overlay_translation_text.overlay_translation_text_container != null) {
+                        create_overlay_translation_text.overlay_translation_text.setVisibility(View.INVISIBLE);
+                        create_overlay_translation_text.overlay_translation_text_container.setVisibility(View.INVISIBLE);
+                    }
                 }
             });
             return result;

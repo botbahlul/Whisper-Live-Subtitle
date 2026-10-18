@@ -626,16 +626,20 @@ public class MainActivity extends AppCompatActivity {
                         // false = mic_button sedang OFF
                         boolean wasRecognizing = RECOGNIZING_STATUS.IS_RECOGNIZING;
 
-                        LANGUAGE.SRC_COUNTRY = spinner_src_languages.getSelectedItem().toString();
-                        LANGUAGE.SRC_DIALECT = src_countries_dialects.get(LANGUAGE.SRC_COUNTRY);
-                        if (LANGUAGE.SRC_DIALECT != null) {
-                            LANGUAGE.SRC = LANGUAGE.SRC_DIALECT.split("-")[0];
+                        if (spinner_src_languages != null && spinner_src_languages.getSelectedItem() != null) {
+                            LANGUAGE.SRC_COUNTRY = spinner_src_languages.getSelectedItem().toString();
+                            LANGUAGE.SRC_DIALECT = src_countries_dialects.get(LANGUAGE.SRC_COUNTRY);
+                            if (LANGUAGE.SRC_DIALECT != null) {
+                                LANGUAGE.SRC = LANGUAGE.SRC_DIALECT.split("-")[0];
+                            }
+                            setText(textview_src, LANGUAGE.SRC);
                         }
-                        setText(textview_src, LANGUAGE.SRC);
 
-                        LANGUAGE.DST_COUNTRY = spinner_dst_languages.getSelectedItem().toString();
-                        LANGUAGE.DST = map_dst_country.get(LANGUAGE.DST_COUNTRY);
-                        setText(textview_dst, LANGUAGE.DST);
+                        if (spinner_dst_languages != null && spinner_dst_languages.getSelectedItem() != null) {
+                            LANGUAGE.DST_COUNTRY = spinner_dst_languages.getSelectedItem().toString();
+                            LANGUAGE.DST = map_dst_country.get(LANGUAGE.DST_COUNTRY);
+                            setText(textview_dst, LANGUAGE.DST);
+                        }
 
                         int h;
                         if (Objects.equals(LANGUAGE.DST, "ja") || Objects.equals(LANGUAGE.DST, "zh-Hans") || Objects.equals(LANGUAGE.DST, "zh-Hant")) {
@@ -680,7 +684,6 @@ public class MainActivity extends AppCompatActivity {
                             startService(serviceIntent);
                         }
 
-
                         /*
                          * =========================================================
                          * UPDATE DEBUG STATUS
@@ -702,18 +705,19 @@ public class MainActivity extends AppCompatActivity {
 
         spinner_dst_languages.setOnItemSelectedListener(new AdapterView.OnItemSelectedListener() {
             public void onItemSelected(AdapterView<?> adapterView, View view, int i, long l) {
-                LANGUAGE.SRC_COUNTRY = spinner_src_languages.getSelectedItem().toString();
-                LANGUAGE.SRC_DIALECT = src_countries_dialects.get(LANGUAGE.SRC_COUNTRY);
-                if (LANGUAGE.SRC_DIALECT != null) {
-                    LANGUAGE.SRC = LANGUAGE.SRC_DIALECT.split("-")[0];
+                if (spinner_src_languages != null && spinner_src_languages.getSelectedItem() != null) {
+                    LANGUAGE.SRC_COUNTRY = spinner_src_languages.getSelectedItem().toString();
+                    LANGUAGE.SRC_DIALECT = src_countries_dialects.get(LANGUAGE.SRC_COUNTRY);
+                    if (LANGUAGE.SRC_DIALECT != null) {
+                        LANGUAGE.SRC = LANGUAGE.SRC_DIALECT.split("-")[0];
+                    }
+                    setText(textview_src, LANGUAGE.SRC);
                 }
-
-                setText(textview_src, LANGUAGE.SRC);
-
-                LANGUAGE.DST_COUNTRY = spinner_dst_languages.getSelectedItem().toString();
-                LANGUAGE.DST = map_dst_country.get(LANGUAGE.DST_COUNTRY);
-
-                setText(textview_dst, LANGUAGE.DST);
+                if (spinner_dst_languages != null && spinner_dst_languages.getSelectedItem() != null) {
+                    LANGUAGE.DST_COUNTRY = spinner_dst_languages.getSelectedItem().toString();
+                    LANGUAGE.DST = map_dst_country.get(LANGUAGE.DST_COUNTRY);
+                    setText(textview_dst, LANGUAGE.DST);
+                }
 
                 int h;
                 if (Objects.equals(LANGUAGE.DST, "ja") || Objects.equals(LANGUAGE.DST, "zh-Hans") || Objects.equals(LANGUAGE.DST, "zh-Hant")) {
@@ -725,19 +729,22 @@ public class MainActivity extends AppCompatActivity {
                 voice_text.setHeight((int) (h * getResources().getDisplayMetrics().density));
                 full_voice_text.setHeight((int) (h * getResources().getDisplayMetrics().density));
             }
+
             @Override
             public void onNothingSelected(AdapterView<?> adapterView) {
-                LANGUAGE.SRC_COUNTRY = spinner_src_languages.getSelectedItem().toString();
-                LANGUAGE.SRC_DIALECT = src_countries_dialects.get(LANGUAGE.SRC_COUNTRY);
-                if (LANGUAGE.SRC_DIALECT != null) {
-                    LANGUAGE.SRC = LANGUAGE.SRC_DIALECT.split("-")[0];
+                if (spinner_src_languages != null && spinner_src_languages.getSelectedItem() != null) {
+                    LANGUAGE.SRC_COUNTRY = spinner_src_languages.getSelectedItem().toString();
+                    LANGUAGE.SRC_DIALECT = src_countries_dialects.get(LANGUAGE.SRC_COUNTRY);
+                    if (LANGUAGE.SRC_DIALECT != null) {
+                        LANGUAGE.SRC = LANGUAGE.SRC_DIALECT.split("-")[0];
+                    }
+                    setText(textview_src, LANGUAGE.SRC);
                 }
-                setText(textview_src, LANGUAGE.SRC);
-
-                LANGUAGE.DST_COUNTRY = spinner_dst_languages.getSelectedItem().toString();
-                LANGUAGE.DST = map_dst_country.get(LANGUAGE.DST_COUNTRY);
-
-                setText(textview_dst, LANGUAGE.DST);
+                if (spinner_dst_languages != null && spinner_dst_languages.getSelectedItem() != null) {
+                    LANGUAGE.DST_COUNTRY = spinner_dst_languages.getSelectedItem().toString();
+                    LANGUAGE.DST = map_dst_country.get(LANGUAGE.DST_COUNTRY);
+                    setText(textview_dst, LANGUAGE.DST);
+                }
             }
         });
 
