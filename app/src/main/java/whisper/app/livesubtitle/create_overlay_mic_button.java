@@ -53,7 +53,6 @@ public class create_overlay_mic_button extends Service {
             MainActivity.voice_text.setHint("Recognized words");
             MainActivity.full_voice_text.setText("");
             MainActivity.full_voice_text.setHint("Recognized sentences");
-            //MainActivity.audio.setStreamVolume(AudioManager.STREAM_NOTIFICATION, (int)Double.parseDouble(String.valueOf((long)(MainActivity.audio.getStreamMaxVolume(AudioManager.STREAM_NOTIFICATION) / 2))), 0);
             MainActivity.audio.setStreamVolume(AudioManager.STREAM_NOTIFICATION, MainActivity.mStreamVolume, 0);
             if (create_overlay_translation_text.overlay_translation_text != null) {
                 create_overlay_translation_text.overlay_translation_text.setText("");
@@ -126,7 +125,6 @@ public class create_overlay_mic_button extends Service {
                             //MainActivity.audio.setStreamVolume(AudioManager.STREAM_NOTIFICATION, MainActivity.mStreamVolume, AudioManager.FLAG_REMOVE_SOUND_AND_VIBRATE);
                             MainActivity.audio.setStreamVolume(AudioManager.STREAM_NOTIFICATION, MainActivity.mStreamVolume, 0);
                         } else {
-                            //MainActivity.audio.setStreamVolume(AudioManager.STREAM_NOTIFICATION, 0, AudioManager.FLAG_REMOVE_SOUND_AND_VIBRATE);
                             MainActivity.audio.setStreamVolume(AudioManager.STREAM_NOTIFICATION, 0, AudioManager.FLAG_REMOVE_SOUND_AND_VIBRATE);
                             start_voice_recognizer();
                             mic_button.setImageResource(R.drawable.ic_mic_black_on);
