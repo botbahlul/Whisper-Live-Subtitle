@@ -399,7 +399,7 @@ public class GlobalOverlay {
         }
 
         params.gravity = Gravity.CENTER_HORIZONTAL | Gravity.BOTTOM;
-        params.y = 56;
+        params.y = 32;
         return params;
     }
 

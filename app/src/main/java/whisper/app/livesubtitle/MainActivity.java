@@ -17,6 +17,7 @@ import android.util.DisplayMetrics;
 import android.util.Log;
 import android.view.MotionEvent;
 import android.view.View;
+import android.view.ViewGroup;
 import android.widget.AdapterView;
 import android.widget.ArrayAdapter;
 import android.widget.Button;
@@ -25,7 +26,6 @@ import android.widget.CompoundButton;
 import android.widget.EditText;
 import android.widget.Spinner;
 import android.widget.TextView;
-import android.widget.Toast;
 
 import androidx.activity.result.ActivityResultLauncher;
 import androidx.activity.result.contract.ActivityResultContracts;
@@ -41,6 +41,9 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
+
+import android.view.animation.AlphaAnimation;
+import android.view.animation.Animation;
 
 
 public class MainActivity extends AppCompatActivity {
@@ -614,8 +617,7 @@ public class MainActivity extends AppCompatActivity {
             textview_debug.setVisibility(View.GONE);
         }
 
-        spinner_src_languages.setOnItemSelectedListener(
-                new AdapterView.OnItemSelectedListener() {
+        spinner_src_languages.setOnItemSelectedListener(new AdapterView.OnItemSelectedListener() {
                     @Override
                     public void onItemSelected(AdapterView<?> adapterView,View view, int i, long l) {
                         // Simpan bahasa source sebelum diubah.
@@ -845,7 +847,7 @@ public class MainActivity extends AppCompatActivity {
         audio.setStreamVolume(AudioManager.STREAM_NOTIFICATION, mStreamVolume, AudioManager.ADJUST_SAME);
     }
 
-    public void setup_src_spinner(ArrayList<String> supported_languages)
+    public void setup_src_spinner_bak(ArrayList<String> supported_languages)
     {
         src_countries_dialects = new HashMap<>();
         for (int i=0;i<supported_languages.size();i++) {
@@ -858,9 +860,62 @@ public class MainActivity extends AppCompatActivity {
         spinner_src_languages.setSelection(supported_languages.indexOf("Indonesian"));
     }
 
-    public void setup_dst_spinner(ArrayList<String> supported_languages) {
+    public void setup_src_spinner(ArrayList<String> supported_languages) {
+        src_countries_dialects = new HashMap<>();
+        for (int i = 0; i < supported_languages.size(); i++) {
+            src_countries_dialects.put(supported_languages.get(i), src_dialects[i]);
+        }
+        Collections.sort(supported_languages);
+        ArrayAdapter<String> adapter = new ArrayAdapter<String>(this, R.layout.spinner_textview_align, supported_languages) {
+            @Override
+            public View getDropDownView(int position, View convertView, ViewGroup parent) {
+                View view = super.getDropDownView(position, convertView, parent);
+                view.setOnTouchListener((v, event) -> {
+                    if (event.getAction() == MotionEvent.ACTION_DOWN) {
+                        AlphaAnimation blink = new AlphaAnimation(1.0f, 0.2f);
+                        blink.setDuration(100);
+                        blink.setRepeatMode(Animation.REVERSE);
+                        blink.setRepeatCount(2);
+                        v.startAnimation(blink);
+                    }
+                    return false;
+                });
+                return view;
+            }
+        };
+        adapter.setDropDownViewResource(R.layout.spinner_textview_align);
+        spinner_src_languages.setAdapter(adapter);
+        spinner_src_languages.setSelection(supported_languages.indexOf("Indonesian"));
+    }
+
+    public void setup_dst_spinner_bak(ArrayList<String> supported_languages) {
         Collections.sort(supported_languages);
         ArrayAdapter<String> adapter = new ArrayAdapter<>(this, R.layout.spinner_textview_align, supported_languages);
+        adapter.setDropDownViewResource(R.layout.spinner_textview_align);
+        spinner_dst_languages.setAdapter(adapter);
+        spinner_dst_languages.setSelection(supported_languages.indexOf("English"));
+    }
+
+    public void setup_dst_spinner(ArrayList<String> supported_languages) {
+        Collections.sort(supported_languages);
+        ArrayAdapter<String> adapter = new ArrayAdapter<String>(this, R.layout.spinner_textview_align, supported_languages) {
+            @Override
+            public View getDropDownView(int position, View convertView, ViewGroup parent) {
+                View view = super.getDropDownView(position, convertView, parent);
+                view.setOnTouchListener((v, event) -> {
+                    if (event.getAction() == MotionEvent.ACTION_DOWN) {
+                        AlphaAnimation blink = new AlphaAnimation(1.0f, 0.2f);
+                        blink.setDuration(100);
+                        blink.setRepeatMode(Animation.REVERSE);
+                        blink.setRepeatCount(2);
+                        v.startAnimation(blink);
+                    }
+                    return false;
+                });
+                return view;
+            }
+        };
+
         adapter.setDropDownViewResource(R.layout.spinner_textview_align);
         spinner_dst_languages.setAdapter(adapter);
         spinner_dst_languages.setSelection(supported_languages.indexOf("English"));
@@ -910,6 +965,26 @@ public class MainActivity extends AppCompatActivity {
     private void stopAudioCaptureService() {
         stopService(new Intent(this, AudioCaptureService.class));
         RECOGNIZING_STATUS.IS_RECOGNIZING = false;
+    }
+
+    private int getSpinnerIndexByDialectCode(ArrayList<String> supportedLanguages, String targetDialectCode) {
+        if (targetDialectCode == null || targetDialectCode.isEmpty()) return 0;
+
+        if (targetDialectCode.equalsIgnoreCase("zh-CN")) {
+            targetDialectCode = "cmn-Hans-CN";
+        }
+
+        for (int i = 0; i < supportedLanguages.size(); i++) {
+            String displayName = supportedLanguages.get(i);
+            String dialectCode = src_countries_dialects.get(displayName); // Menghasilkan "id-ID", "id", atau "en-US"
+
+            if (dialectCode != null) {
+                if (dialectCode.equalsIgnoreCase(targetDialectCode)) {
+                    return i;
+                }
+            }
+        }
+        return 0;
     }
 
 }

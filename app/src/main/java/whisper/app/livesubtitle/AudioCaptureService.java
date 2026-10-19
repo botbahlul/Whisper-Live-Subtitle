@@ -764,7 +764,26 @@ public class AudioCaptureService extends Service {
 
             handler.post(() -> {
                 translatedLastVoiceString = TRANSLATION.toString();
+                translatedLastVoiceString = translatedLastVoiceString.substring(0, 1).toUpperCase() + translatedLastVoiceString.substring(1);
                 if (RECOGNIZING_STATUS.IS_RECOGNIZING) {
+                    if (create_overlay_translation_text.overlay_translation_text_container != null) {
+                        create_overlay_translation_text.overlay_translation_text_container.setVisibility(View.VISIBLE);
+                        create_overlay_translation_text.overlay_translation_text_container.setBackgroundColor(Color.parseColor("#80000000"));
+                        create_overlay_translation_text.overlay_translation_text.setVisibility(View.VISIBLE);
+                        create_overlay_translation_text.overlay_translation_text.setBackgroundColor(Color.TRANSPARENT);
+                        create_overlay_translation_text.overlay_translation_text.setTextIsSelectable(true);
+                        create_overlay_translation_text.overlay_translation_text.setHighlightColor(Color.TRANSPARENT);
+                        create_overlay_translation_text.overlay_translation_text.setText(translatedLastVoiceString);
+                        create_overlay_translation_text.overlay_translation_text.setSelection(create_overlay_translation_text.overlay_translation_text.getText().length());
+                        create_overlay_translation_text.overlay_translation_text.setTextColor(Color.parseColor("#FFFF00"));
+                        //android.util.Log.d("SubtitleDebug", "textColor=" + Integer.toHexString(create_overlay_translation_text.overlay_translation_text.getCurrentTextColor()) + ", alpha=" + create_overlay_translation_text.overlay_translation_text.getAlpha() + ", layerType=" + create_overlay_translation_text.overlay_translation_text.getLayerType() + ", backgroundAlpha=" + (create_overlay_translation_text.overlay_translation_text.getBackground() != null ? create_overlay_translation_text.overlay_translation_text.getBackground().getAlpha() : -1));
+                        Spannable spannableString = new SpannableStringBuilder(translatedLastVoiceString);
+                        int selectionEnd = create_overlay_translation_text.overlay_translation_text.getSelectionEnd();
+                        spannableString.setSpan(new ForegroundColorSpan(Color.parseColor("#FFFF00")), 0, selectionEnd,0);
+                        spannableString.setSpan(new BackgroundColorSpan(Color.parseColor("#80000000")), 0, selectionEnd, 0);
+                        create_overlay_translation_text.overlay_translation_text.setText(spannableString);
+                        create_overlay_translation_text.overlay_translation_text.setSelection(create_overlay_translation_text.overlay_translation_text.getText().length());
+                    }
                     if (create_overlay_translation_text.overlay_full_translation_text_container != null) {
                         create_overlay_translation_text.overlay_full_translation_text_container.setVisibility(View.VISIBLE);
                         create_overlay_translation_text.overlay_full_translation_text_container.setBackgroundColor(Color.parseColor("#80000000"));
@@ -778,6 +797,10 @@ public class AudioCaptureService extends Service {
                         create_overlay_translation_text.overlay_full_translation_text.setGravity(Gravity.BOTTOM);
                     }
                 } else {
+                    if (create_overlay_translation_text.overlay_translation_text_container != null) {
+                        create_overlay_translation_text.overlay_translation_text.setVisibility(View.INVISIBLE);
+                        create_overlay_translation_text.overlay_translation_text_container.setVisibility(View.INVISIBLE);
+                    }
                     if (create_overlay_translation_text.overlay_full_translation_text_container != null) {
                         create_overlay_translation_text.overlay_full_translation_text.setVisibility(View.INVISIBLE);
                         create_overlay_translation_text.overlay_full_translation_text_container.setVisibility(View.INVISIBLE);
@@ -840,21 +863,47 @@ public class AudioCaptureService extends Service {
 
                 handler.post(() -> {
                     translatedLastVoiceString = TRANSLATION.toString();
-
+                    translatedLastVoiceString = translatedLastVoiceString.substring(0, 1).toUpperCase() + translatedLastVoiceString.substring(1);
                     if (RECOGNIZING_STATUS.IS_RECOGNIZING) {
-                        create_overlay_translation_text.overlay_full_translation_text_container.setVisibility(View.VISIBLE);
-                        create_overlay_translation_text.overlay_full_translation_text_container.setBackgroundColor(Color.parseColor("#80000000"));
-                        create_overlay_translation_text.overlay_full_translation_text.setVisibility(View.VISIBLE);
-                        create_overlay_translation_text.overlay_full_translation_text.setBackgroundColor(Color.TRANSPARENT);
-                        create_overlay_translation_text.overlay_full_translation_text.setTextIsSelectable(true);
-                        create_overlay_translation_text.overlay_full_translation_text.setHighlightColor(Color.TRANSPARENT);
-                        appendText(create_overlay_translation_text.overlay_full_translation_text, "\n" + translatedLastVoiceString);
-                        create_overlay_translation_text.overlay_full_translation_text.setSelection(create_overlay_translation_text.overlay_full_translation_text.getText().length());
-                        create_overlay_translation_text.overlay_full_translation_text.setTextColor(Color.parseColor("#FF00FFFF"));
-                        create_overlay_translation_text.overlay_full_translation_text.setGravity(Gravity.BOTTOM);
+                        if (create_overlay_translation_text.overlay_translation_text_container != null) {
+                            create_overlay_translation_text.overlay_translation_text_container.setVisibility(View.VISIBLE);
+                            create_overlay_translation_text.overlay_translation_text_container.setBackgroundColor(Color.parseColor("#80000000"));
+                            create_overlay_translation_text.overlay_translation_text.setVisibility(View.VISIBLE);
+                            create_overlay_translation_text.overlay_translation_text.setBackgroundColor(Color.TRANSPARENT);
+                            create_overlay_translation_text.overlay_translation_text.setTextIsSelectable(true);
+                            create_overlay_translation_text.overlay_translation_text.setHighlightColor(Color.TRANSPARENT);
+                            create_overlay_translation_text.overlay_translation_text.setText(translatedLastVoiceString);
+                            create_overlay_translation_text.overlay_translation_text.setSelection(create_overlay_translation_text.overlay_translation_text.getText().length());
+                            create_overlay_translation_text.overlay_translation_text.setTextColor(Color.parseColor("#FFFF00"));
+                            //android.util.Log.d("SubtitleDebug", "textColor=" + Integer.toHexString(create_overlay_translation_text.overlay_translation_text.getCurrentTextColor()) + ", alpha=" + create_overlay_translation_text.overlay_translation_text.getAlpha() + ", layerType=" + create_overlay_translation_text.overlay_translation_text.getLayerType() + ", backgroundAlpha=" + (create_overlay_translation_text.overlay_translation_text.getBackground() != null ? create_overlay_translation_text.overlay_translation_text.getBackground().getAlpha() : -1));
+                            Spannable spannableString = new SpannableStringBuilder(translatedLastVoiceString);
+                            int selectionEnd = create_overlay_translation_text.overlay_translation_text.getSelectionEnd();
+                            spannableString.setSpan(new ForegroundColorSpan(Color.parseColor("#FFFF00")), 0, selectionEnd,0);
+                            spannableString.setSpan(new BackgroundColorSpan(Color.parseColor("#80000000")), 0, selectionEnd, 0);
+                            create_overlay_translation_text.overlay_translation_text.setText(spannableString);
+                            create_overlay_translation_text.overlay_translation_text.setSelection(create_overlay_translation_text.overlay_translation_text.getText().length());
+                        }
+                        if (create_overlay_translation_text.overlay_full_translation_text_container != null) {
+                            create_overlay_translation_text.overlay_full_translation_text_container.setVisibility(View.VISIBLE);
+                            create_overlay_translation_text.overlay_full_translation_text_container.setBackgroundColor(Color.parseColor("#80000000"));
+                            create_overlay_translation_text.overlay_full_translation_text.setVisibility(View.VISIBLE);
+                            create_overlay_translation_text.overlay_full_translation_text.setBackgroundColor(Color.TRANSPARENT);
+                            create_overlay_translation_text.overlay_full_translation_text.setTextIsSelectable(true);
+                            create_overlay_translation_text.overlay_full_translation_text.setHighlightColor(Color.TRANSPARENT);
+                            appendText(create_overlay_translation_text.overlay_full_translation_text, "\n" + translatedLastVoiceString);
+                            create_overlay_translation_text.overlay_full_translation_text.setSelection(create_overlay_translation_text.overlay_full_translation_text.getText().length());
+                            create_overlay_translation_text.overlay_full_translation_text.setTextColor(Color.parseColor("#FF00FFFF"));
+                            create_overlay_translation_text.overlay_full_translation_text.setGravity(Gravity.BOTTOM);
+                        }
                     } else {
-                        create_overlay_translation_text.overlay_full_translation_text.setVisibility(View.INVISIBLE);
-                        create_overlay_translation_text.overlay_full_translation_text_container.setVisibility(View.INVISIBLE);
+                        if (create_overlay_translation_text.overlay_translation_text_container != null) {
+                            create_overlay_translation_text.overlay_translation_text.setVisibility(View.INVISIBLE);
+                            create_overlay_translation_text.overlay_translation_text_container.setVisibility(View.INVISIBLE);
+                        }
+                        if (create_overlay_translation_text.overlay_full_translation_text_container != null) {
+                            create_overlay_translation_text.overlay_full_translation_text.setVisibility(View.INVISIBLE);
+                            create_overlay_translation_text.overlay_full_translation_text_container.setVisibility(View.INVISIBLE);
+                        }
                     }
                 });
             });
@@ -930,7 +979,7 @@ public class AudioCaptureService extends Service {
                                 //}
 
                                 //lastText = lastText + finalText;
-                                VOICE_TEXT.STRING = finalText;
+                                VOICE_TEXT.STRING = finalText.substring(0, 1).toUpperCase() + finalText.substring(1);
                                 MainActivity.voice_text.setText(VOICE_TEXT.STRING);
                                 MainActivity.voice_text.setSelection(MainActivity.voice_text.getText().length());
                                 if (!VOICE_TEXT.STRING.isEmpty()) {
@@ -1291,7 +1340,7 @@ public class AudioCaptureService extends Service {
         recognitionExecutor = Executors.newSingleThreadExecutor();
         recordingThread = new Thread(this::processSamples,"AudioPlaybackCaptureThread");
         recordingThread.start();
-        startTranslationTimer();
+        //startTranslationTimer();
         Log.i(TAG, "Started AudioPlaybackCapture recording");
     }
 
