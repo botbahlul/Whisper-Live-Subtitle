@@ -52,12 +52,8 @@ import java.io.IOException;
 import java.io.UnsupportedEncodingException;
 import java.net.URLEncoder;
 import java.util.Objects;
-import java.util.Timer;
-import java.util.TimerTask;
-import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
-import java.util.concurrent.Future;
 import java.util.concurrent.atomic.AtomicReference;
 
 import android.media.AudioAttributes;
@@ -74,25 +70,17 @@ public class AudioCaptureService extends Service {
     private volatile boolean startPending = false;
     private Thread recordingThread;
     private static final int sampleRate = 16000;
-    //private static final int PARTIAL_MAX_SAMPLES = 4 * sampleRate;
-    //private static final long PARTIAL_INTERVAL_MS = 500;
-    //private volatile boolean partialRecognitionRunning = false;
-    //private final Object partialAudioLock = new Object();
-    //private final ArrayList<Float> partialAudioBuffer = new ArrayList<>();
-    //private long lastPartialRecognitionTime = 0;
     private ExecutorService initializationExecutor;
     private ExecutorService recognitionExecutor;
     private ExecutorService translationExecutor;
     private volatile boolean serviceStopping = false;
     private OfflineRecognizer offlineRecognizer;
-    private Timer timer;
-    private TimerTask timerTask;
     private final int audioFormat = AudioFormat.ENCODING_PCM_16BIT;
     private final int channelConfig = AudioFormat.CHANNEL_IN_MONO;
     //private final int audioSource = MediaRecorder.AudioSource.MIC;
     private Vad vad;
-    private String lastVoiceString = "";
-    private String translatedLastVoiceString = "";
+    //private String lastVoiceString = "";
+    //private String TRANSLATION_TEXT.STRING = "";
 
     public static final String EXTRA_RESULT_CODE = "whisper.app.livesubtitle.MEDIA_PROJECTION_RESULT_CODE";
     public static final String EXTRA_RESULT_DATA = "whisper.app.livesubtitle.MEDIA_PROJECTION_RESULT_DATA";
@@ -118,7 +106,6 @@ public class AudioCaptureService extends Service {
         MainActivity.full_voice_text.setHeight((int) (h * getResources().getDisplayMetrics().density));
         MainActivity.full_voice_text.setGravity(Gravity.BOTTOM);
 
-        String src_dialect = LANGUAGE.SRC_DIALECT;
         RECOGNIZING_STATUS.STRING = "RECOGNIZING_STATUS.IS_RECOGNIZING = " + RECOGNIZING_STATUS.IS_RECOGNIZING;
         MainActivity.textview_recognizing.setText(RECOGNIZING_STATUS.STRING);
         MIC_BUTTON_STATUS.STRING = "MIC_BUTTON_STATUS.IS_OVERLAYING = " + MIC_BUTTON_STATUS.IS_OVERLAYING;
@@ -285,10 +272,6 @@ public class AudioCaptureService extends Service {
     @Override
     public IBinder onBind(Intent intent) { return null; }
 
-    public void setText(final TextView tv, final String text){
-        new Handler(Looper.getMainLooper()).post(() -> tv.setText(text));
-    }
-
     private void initOfflineRecognizer() {
         // Please change getOfflineModelConfig() to add new models
         // See https://k2-fsa.github.io/sherpa/onnx/pretrained_models/index.html
@@ -448,255 +431,6 @@ public class AudioCaptureService extends Service {
         });
     }
 
-    private String GoogleTranslate1(String SENTENCE, String SRC, String DST) {
-        Future<String> future = translationExecutor.submit(() -> {
-            HttpClient httpClient = null;
-            try {
-                String encodedSentence;
-                try {
-                    encodedSentence = URLEncoder.encode(SENTENCE, "UTF-8");
-                } catch (UnsupportedEncodingException e) {
-                    Log.e("GoogleTranslator", "UTF-8 encoding failed", e);
-                    return "";
-                }
-
-                String url = "https://clients5.google.com/translate_a/t";
-                String params =
-                        "?client=dict-chrome-ex"
-                                + "&sl=" + SRC
-                                + "&tl=" + DST
-                                + "&q=" + encodedSentence;
-                httpClient = new DefaultHttpClient();
-                HttpGet httpget = new HttpGet(url + params);
-                httpget.setHeader(
-                        "User-Agent",
-                        "Mozilla/5.0 (Windows NT 10.0; Win64; x64) "
-                                + "AppleWebKit/537.36 (KHTML, like Gecko) "
-                                + "Chrome/139.0.0.0 Safari/537.36"
-                );
-                HttpResponse response = httpClient.execute(httpget);
-                StatusLine statusLine = response.getStatusLine();
-                int statusCode = statusLine.getStatusCode();
-                if (statusCode != 200) {
-                    Log.e("GoogleTranslator",
-                            "HTTP "
-                                    + statusCode
-                                    + ": "
-                                    + statusLine.getReasonPhrase()
-                    );
-                    return "";
-                }
-
-                if (response.getEntity() == null) {
-                    Log.e("GoogleTranslator", "HTTP response entity is null");
-                    return "";
-                }
-
-                ByteArrayOutputStream byteArrayOutputStream = new ByteArrayOutputStream();
-
-                try {
-                    response.getEntity().writeTo(byteArrayOutputStream);
-                    String responseString = byteArrayOutputStream.toString("UTF-8");
-                    Log.d("GoogleTranslator", "Response: " + responseString);
-                    JSONArray jsonArray = new JSONArray(responseString);
-                    StringBuilder translation = new StringBuilder();
-                    for (int i = 0; i < jsonArray.length(); i++) {
-                        if (!jsonArray.isNull(i)) {
-                            translation.append(jsonArray.getString(i));
-                        }
-                    }
-                    String translatedText = translation.toString();
-                    Log.d("GoogleTranslator", "TRANSLATION: " + translatedText);
-                    return translatedText;
-                } finally {
-                    byteArrayOutputStream.close();
-                }
-
-            } catch (Exception e) {
-                Log.e("GoogleTranslator", "Translation error", e);
-                return "";
-
-            } finally {
-                if (httpClient != null) {
-                    httpClient.getConnectionManager().shutdown();}
-            }
-        });
-
-        try {
-            String translatedText = future.get();
-             // future.get() has produced String from thread translationExecutor.
-             // Now UI update must be done via Main/UI thread
-            Handler handler = new Handler(Looper.getMainLooper());
-            handler.post(() -> {
-                TRANSLATION_TEXT.STRING = translatedText;
-                Log.d("GoogleTranslator", "TRANSLATION_TEXT.STRING: " + TRANSLATION_TEXT.STRING);
-                if (RECOGNIZING_STATUS.IS_RECOGNIZING) {
-                    if (create_overlay_translation_text.overlay_translation_text_container != null) {
-                        create_overlay_translation_text.overlay_translation_text_container.setVisibility(View.VISIBLE);
-                        create_overlay_translation_text.overlay_translation_text_container.setBackgroundColor(Color.parseColor("#80000000"));
-                        create_overlay_translation_text.overlay_translation_text.setVisibility(View.VISIBLE);
-                        create_overlay_translation_text.overlay_translation_text.setBackgroundColor(Color.TRANSPARENT);
-                        create_overlay_translation_text.overlay_translation_text.setTextIsSelectable(true);
-                        create_overlay_translation_text.overlay_translation_text.setHighlightColor(Color.TRANSPARENT);
-                        create_overlay_translation_text.overlay_translation_text.setText(TRANSLATION_TEXT.STRING);
-                        create_overlay_translation_text.overlay_translation_text.setSelection(create_overlay_translation_text.overlay_translation_text.getText().length());
-                        create_overlay_translation_text.overlay_translation_text.setTextColor(Color.parseColor("#FFFF00"));
-                        //android.util.Log.d("SubtitleDebug", "textColor=" + Integer.toHexString(create_overlay_translation_text.overlay_translation_text.getCurrentTextColor()) + ", alpha=" + create_overlay_translation_text.overlay_translation_text.getAlpha() + ", layerType=" + create_overlay_translation_text.overlay_translation_text.getLayerType() + ", backgroundAlpha=" + (create_overlay_translation_text.overlay_translation_text.getBackground() != null ? create_overlay_translation_text.overlay_translation_text.getBackground().getAlpha() : -1));
-                        Spannable spannableString = new SpannableStringBuilder(TRANSLATION_TEXT.STRING);
-                        int selectionEnd = create_overlay_translation_text.overlay_translation_text.getSelectionEnd();
-                        spannableString.setSpan(new ForegroundColorSpan(Color.parseColor("#FFFF00")), 0, selectionEnd,0);
-                        spannableString.setSpan(new BackgroundColorSpan(Color.parseColor("#80000000")), 0, selectionEnd, 0);
-                        create_overlay_translation_text.overlay_translation_text.setText(spannableString);
-                        create_overlay_translation_text.overlay_translation_text.setSelection(create_overlay_translation_text.overlay_translation_text.getText().length());
-                    }
-                } else {
-                    if (create_overlay_translation_text.overlay_translation_text_container != null) {
-                        create_overlay_translation_text.overlay_translation_text.setVisibility(View.INVISIBLE);
-                        create_overlay_translation_text.overlay_translation_text_container.setVisibility(View.INVISIBLE);
-                    }
-                }
-            });
-
-            return translatedText;
-
-        } catch (InterruptedException e) {
-             // Do not swallow the thread interrupt status
-            Thread.currentThread().interrupt();
-            Log.e("GoogleTranslator", "GoogleTranslate2 interrupted", e);
-            return "";
-
-        } catch (ExecutionException e) {
-            Log.e("GoogleTranslator", "GoogleTranslate2 failed", e);
-            return "";
-        }
-    }
-
-    private String GoogleTranslate2(String SENTENCE, String SRC, String DST) {
-        if (SENTENCE == null || SENTENCE.length() == 0) {
-            return "";
-        }
-        if (!RECOGNIZING_STATUS.IS_RECOGNIZING) {
-            return "";
-        }
-        if (translationExecutor == null || translationExecutor.isShutdown()) {
-            Log.e("GoogleTranslator", "translationExecutor is not available");
-            return "";
-        }
-
-        final Handler handler = new Handler(Looper.getMainLooper());
-        final String finalSENTENCE;
-
-        try {
-            finalSENTENCE = URLEncoder.encode(SENTENCE, "UTF-8");
-        } catch (UnsupportedEncodingException e) {
-            Log.e("GoogleTranslate1", "URL encoding failed", e);
-            return "";
-        }
-
-        Future<String> future = translationExecutor.submit(() -> {
-            StringBuilder translation = new StringBuilder();
-            HttpClient httpClient = null;
-            try {
-                String url = "https://translate.googleapis.com/translate_a/";
-                String params =
-                        "single?client=gtx"
-                                + "&sl=" + SRC
-                                + "&tl=" + DST
-                                + "&dt=t"
-                                + "&q=" + finalSENTENCE;
-
-                httpClient = new DefaultHttpClient();
-                HttpGet httpGet = new HttpGet(url + params);
-                HttpResponse response = httpClient.execute(httpGet);
-                StatusLine statusLine = response.getStatusLine();
-                if (statusLine.getStatusCode() == 200) {
-                    ByteArrayOutputStream byteArrayOutputStream = new ByteArrayOutputStream();
-                    try {
-                        response.getEntity().writeTo(byteArrayOutputStream);
-                        String responseString = byteArrayOutputStream.toString("UTF-8");
-                        Log.d("GoogleTranslator", "GoogleTranslate1 Response: " + responseString);
-                        JSONArray jsonArray = new JSONArray(responseString);
-                        JSONArray sentences = jsonArray.getJSONArray(0);
-                        int length = sentences.length();
-                        for (int i = 0; i < length; i++) {
-                            JSONArray item = sentences.getJSONArray(i);
-                            if (!item.isNull(0)) {
-                                translation.append(item.getString(0));
-                            }
-                        }
-                    } finally {
-                        byteArrayOutputStream.close();
-                    }
-
-                } else {
-                    Log.e("GoogleTranslator", "HTTP " + statusLine.getStatusCode() + ": " + statusLine.getReasonPhrase());
-                    if (response.getEntity() != null) {
-                        response.getEntity().getContent().close();
-                    }
-                    throw new IOException("HTTP " + statusLine.getStatusCode() + ": " + statusLine.getReasonPhrase());
-                }
-
-            } catch (Exception e) {
-                Log.e("GoogleTranslate1", "Translation error", e);
-
-            } finally {
-                if (httpClient != null) {
-                    httpClient.getConnectionManager().shutdown();
-                }
-            }
-            return translation.toString();
-        });
-
-        try {
-            String result = future.get();
-            if (result == null) {
-                result = "";
-            }
-            final String translatedText = result;
-            Log.d("GoogleTranslator", "GoogleTranslate1 result = " + translatedText );
-
-            // Update overlay on Android main thread.
-            handler.post(() -> {
-                TRANSLATION_TEXT.STRING = translatedText;
-                if (RECOGNIZING_STATUS.IS_RECOGNIZING) {
-                    if (create_overlay_translation_text.overlay_translation_text_container != null) {
-                        create_overlay_translation_text.overlay_translation_text_container.setVisibility(View.VISIBLE);
-                        create_overlay_translation_text.overlay_translation_text_container.setBackgroundColor(Color.parseColor("#80000000"));
-                        create_overlay_translation_text.overlay_translation_text.setVisibility(View.VISIBLE);
-                        create_overlay_translation_text.overlay_translation_text.setBackgroundColor(Color.TRANSPARENT);
-                        create_overlay_translation_text.overlay_translation_text.setTextIsSelectable(true);
-                        create_overlay_translation_text.overlay_translation_text.setHighlightColor(Color.TRANSPARENT);
-                        create_overlay_translation_text.overlay_translation_text.setText(TRANSLATION_TEXT.STRING);
-                        create_overlay_translation_text.overlay_translation_text.setSelection(create_overlay_translation_text.overlay_translation_text.getText().length());
-                        create_overlay_translation_text.overlay_translation_text.setTextColor(Color.parseColor("#FFFF00"));
-                        //android.util.Log.d("SubtitleDebug", "textColor=" + Integer.toHexString(create_overlay_translation_text.overlay_translation_text.getCurrentTextColor()) + ", alpha=" + create_overlay_translation_text.overlay_translation_text.getAlpha() + ", layerType=" + create_overlay_translation_text.overlay_translation_text.getLayerType() + ", backgroundAlpha=" + (create_overlay_translation_text.overlay_translation_text.getBackground() != null ? create_overlay_translation_text.overlay_translation_text.getBackground().getAlpha() : -1));
-                        Spannable spannableString = new SpannableStringBuilder(TRANSLATION_TEXT.STRING);
-                        int selectionEnd = create_overlay_translation_text.overlay_translation_text.getSelectionEnd();
-                        spannableString.setSpan(new ForegroundColorSpan(Color.parseColor("#FFFF00")), 0, selectionEnd,0);
-                        spannableString.setSpan(new BackgroundColorSpan(Color.parseColor("#80000000")), 0, selectionEnd, 0);
-                        create_overlay_translation_text.overlay_translation_text.setText(spannableString);
-                        create_overlay_translation_text.overlay_translation_text.setSelection(create_overlay_translation_text.overlay_translation_text.getText().length());
-                    }
-                } else {
-                    if (create_overlay_translation_text.overlay_translation_text_container != null) {
-                        create_overlay_translation_text.overlay_translation_text.setVisibility(View.INVISIBLE);
-                        create_overlay_translation_text.overlay_translation_text_container.setVisibility(View.INVISIBLE);
-                    }
-                }
-            });
-            return result;
-
-        } catch (InterruptedException e) {
-            Thread.currentThread().interrupt();
-            Log.e("GoogleTranslate1", "Translation interrupted", e);
-            return "";
-
-        } catch (ExecutionException e) {
-            Log.e("GoogleTranslate1", "Translation execution failed", e);
-            return "";
-        }
-    }
-
     private void FullGoogleTranslate1(String SENTENCE, String SRC, String DST) {
         ExecutorService executor = Executors.newSingleThreadExecutor();
         Handler handler = new Handler(Looper.getMainLooper());
@@ -763,47 +497,77 @@ public class AudioCaptureService extends Service {
             }
 
             handler.post(() -> {
-                translatedLastVoiceString = TRANSLATION.toString();
-                translatedLastVoiceString = translatedLastVoiceString.substring(0, 1).toUpperCase() + translatedLastVoiceString.substring(1);
-                if (RECOGNIZING_STATUS.IS_RECOGNIZING) {
-                    if (create_overlay_translation_text.overlay_translation_text_container != null) {
-                        create_overlay_translation_text.overlay_translation_text_container.setVisibility(View.VISIBLE);
-                        create_overlay_translation_text.overlay_translation_text_container.setBackgroundColor(Color.parseColor("#80000000"));
-                        create_overlay_translation_text.overlay_translation_text.setVisibility(View.VISIBLE);
-                        create_overlay_translation_text.overlay_translation_text.setBackgroundColor(Color.TRANSPARENT);
-                        create_overlay_translation_text.overlay_translation_text.setTextIsSelectable(true);
-                        create_overlay_translation_text.overlay_translation_text.setHighlightColor(Color.TRANSPARENT);
-                        create_overlay_translation_text.overlay_translation_text.setText(translatedLastVoiceString);
-                        create_overlay_translation_text.overlay_translation_text.setSelection(create_overlay_translation_text.overlay_translation_text.getText().length());
-                        create_overlay_translation_text.overlay_translation_text.setTextColor(Color.parseColor("#FFFF00"));
-                        //android.util.Log.d("SubtitleDebug", "textColor=" + Integer.toHexString(create_overlay_translation_text.overlay_translation_text.getCurrentTextColor()) + ", alpha=" + create_overlay_translation_text.overlay_translation_text.getAlpha() + ", layerType=" + create_overlay_translation_text.overlay_translation_text.getLayerType() + ", backgroundAlpha=" + (create_overlay_translation_text.overlay_translation_text.getBackground() != null ? create_overlay_translation_text.overlay_translation_text.getBackground().getAlpha() : -1));
-                        Spannable spannableString = new SpannableStringBuilder(translatedLastVoiceString);
-                        int selectionEnd = create_overlay_translation_text.overlay_translation_text.getSelectionEnd();
-                        spannableString.setSpan(new ForegroundColorSpan(Color.parseColor("#FFFF00")), 0, selectionEnd,0);
-                        spannableString.setSpan(new BackgroundColorSpan(Color.parseColor("#80000000")), 0, selectionEnd, 0);
-                        create_overlay_translation_text.overlay_translation_text.setText(spannableString);
-                        create_overlay_translation_text.overlay_translation_text.setSelection(create_overlay_translation_text.overlay_translation_text.getText().length());
-                    }
-                    if (create_overlay_translation_text.overlay_full_translation_text_container != null) {
-                        create_overlay_translation_text.overlay_full_translation_text_container.setVisibility(View.VISIBLE);
-                        create_overlay_translation_text.overlay_full_translation_text_container.setBackgroundColor(Color.parseColor("#80000000"));
-                        create_overlay_translation_text.overlay_full_translation_text.setVisibility(View.VISIBLE);
-                        create_overlay_translation_text.overlay_full_translation_text.setBackgroundColor(Color.TRANSPARENT);
-                        create_overlay_translation_text.overlay_full_translation_text.setTextIsSelectable(true);
-                        create_overlay_translation_text.overlay_full_translation_text.setHighlightColor(Color.TRANSPARENT);
-                        appendText(create_overlay_translation_text.overlay_full_translation_text, "\n" + translatedLastVoiceString);
-                        create_overlay_translation_text.overlay_full_translation_text.setSelection(create_overlay_translation_text.overlay_full_translation_text.getText().length());
-                        create_overlay_translation_text.overlay_full_translation_text.setTextColor(Color.parseColor("#FF00FFFF"));
-                        create_overlay_translation_text.overlay_full_translation_text.setGravity(Gravity.BOTTOM);
-                    }
-                } else {
-                    if (create_overlay_translation_text.overlay_translation_text_container != null) {
-                        create_overlay_translation_text.overlay_translation_text.setVisibility(View.INVISIBLE);
-                        create_overlay_translation_text.overlay_translation_text_container.setVisibility(View.INVISIBLE);
-                    }
-                    if (create_overlay_translation_text.overlay_full_translation_text_container != null) {
-                        create_overlay_translation_text.overlay_full_translation_text.setVisibility(View.INVISIBLE);
-                        create_overlay_translation_text.overlay_full_translation_text_container.setVisibility(View.INVISIBLE);
+                TRANSLATION_TEXT.STRING = TRANSLATION.toString();
+                if (TRANSLATION_TEXT.STRING != null && !TRANSLATION_TEXT.STRING.isEmpty()) {
+                    TRANSLATION_TEXT.STRING = TRANSLATION_TEXT.STRING.substring(0, 1).toUpperCase() + TRANSLATION_TEXT.STRING.substring(1);
+                    if (RECOGNIZING_STATUS.IS_RECOGNIZING) {
+                        if (create_overlay_translation_text.overlay_translation_text_container != null) {
+                            create_overlay_translation_text.overlay_translation_text_container.setVisibility(View.VISIBLE);
+                            create_overlay_translation_text.overlay_translation_text_container.setBackgroundColor(Color.parseColor("#80000000"));
+                            create_overlay_translation_text.overlay_translation_text.setVisibility(View.VISIBLE);
+                            create_overlay_translation_text.overlay_translation_text.setBackgroundColor(Color.TRANSPARENT);
+                            create_overlay_translation_text.overlay_translation_text.setTextIsSelectable(true);
+                            create_overlay_translation_text.overlay_translation_text.setHighlightColor(Color.TRANSPARENT);
+                            create_overlay_translation_text.overlay_translation_text.setText(TRANSLATION_TEXT.STRING);
+                            create_overlay_translation_text.overlay_translation_text.setSelection(create_overlay_translation_text.overlay_translation_text.getText().length());
+                            create_overlay_translation_text.overlay_translation_text.setTextColor(Color.parseColor("#FFFF00"));
+                            //android.util.Log.d("SubtitleDebug", "textColor=" + Integer.toHexString(create_overlay_translation_text.overlay_translation_text.getCurrentTextColor()) + ", alpha=" + create_overlay_translation_text.overlay_translation_text.getAlpha() + ", layerType=" + create_overlay_translation_text.overlay_translation_text.getLayerType() + ", backgroundAlpha=" + (create_overlay_translation_text.overlay_translation_text.getBackground() != null ? create_overlay_translation_text.overlay_translation_text.getBackground().getAlpha() : -1));
+                            // 1. Makes Spannable
+                            Spannable spannableString = new SpannableStringBuilder(TRANSLATION_TEXT.STRING);
+                            // 2. Validate the index to ensure it does not exceed the text length (prevents crashes)
+                            int textLength = TRANSLATION_TEXT.STRING.length();
+                            int selectionEnd = create_overlay_translation_text.overlay_translation_text.getSelectionEnd();
+                            int safeEnd = Math.max(0, Math.min(selectionEnd, textLength)); // Safe from IndexOutOfBounds
+                            // 3. Apply Span using safeEnd
+                            spannableString.setSpan(new ForegroundColorSpan(Color.parseColor("#FFFF00")),
+                                    0,
+                                    safeEnd,
+                                    Spannable.SPAN_EXCLUSIVE_EXCLUSIVE); // Use valid standard flags
+                            spannableString.setSpan(new BackgroundColorSpan(Color.parseColor("#80000000")),
+                                    0,
+                                    safeEnd,
+                                    Spannable.SPAN_EXCLUSIVE_EXCLUSIVE);
+                            create_overlay_translation_text.overlay_translation_text.setText(spannableString);
+                            create_overlay_translation_text.overlay_translation_text.setSelection(create_overlay_translation_text.overlay_translation_text.getText().length());
+                        }
+                        if (create_overlay_translation_text.overlay_full_translation_text_container != null) {
+                            create_overlay_translation_text.overlay_full_translation_text_container.setVisibility(View.VISIBLE);
+                            create_overlay_translation_text.overlay_full_translation_text_container.setBackgroundColor(Color.parseColor("#80000000"));
+                            create_overlay_translation_text.overlay_full_translation_text.setVisibility(View.VISIBLE);
+                            create_overlay_translation_text.overlay_full_translation_text.setBackgroundColor(Color.TRANSPARENT);
+                            create_overlay_translation_text.overlay_full_translation_text.setTextIsSelectable(true);
+                            create_overlay_translation_text.overlay_full_translation_text.setHighlightColor(Color.TRANSPARENT);
+                            appendText(create_overlay_translation_text.overlay_full_translation_text, "\n" + TRANSLATION_TEXT.STRING);
+                            create_overlay_translation_text.overlay_full_translation_text.setSelection(create_overlay_translation_text.overlay_full_translation_text.getText().length());
+                            create_overlay_translation_text.overlay_full_translation_text.setTextColor(Color.parseColor("#FF00FFFF"));
+                            // 1. Makes Spannable
+                            Spannable spannableString = new SpannableStringBuilder(TRANSLATION_TEXT.STRING);
+                            // 2. Validate the index to ensure it does not exceed the text length (prevents crashes)
+                            int textLength = TRANSLATION_TEXT.STRING.length();
+                            int selectionEnd = create_overlay_translation_text.overlay_translation_text.getSelectionEnd();
+                            int safeEnd = Math.max(0, Math.min(selectionEnd, textLength)); // Safe from IndexOutOfBounds
+                            // 3. Apply Span using safeEnd
+                            spannableString.setSpan(new ForegroundColorSpan(Color.parseColor("#FFFF00")),
+                                    0,
+                                    safeEnd,
+                                    Spannable.SPAN_EXCLUSIVE_EXCLUSIVE); // Use valid standard flags
+                            spannableString.setSpan(new BackgroundColorSpan(Color.parseColor("#80000000")),
+                                    0,
+                                    safeEnd,
+                                    Spannable.SPAN_EXCLUSIVE_EXCLUSIVE);
+                            create_overlay_translation_text.overlay_translation_text.setText(spannableString);
+                            create_overlay_translation_text.overlay_translation_text.setSelection(create_overlay_translation_text.overlay_translation_text.getText().length());
+                            create_overlay_translation_text.overlay_full_translation_text.setGravity(Gravity.BOTTOM);
+                        }
+                    } else {
+                        if (create_overlay_translation_text.overlay_translation_text_container != null) {
+                            create_overlay_translation_text.overlay_translation_text.setVisibility(View.INVISIBLE);
+                            create_overlay_translation_text.overlay_translation_text_container.setVisibility(View.INVISIBLE);
+                        }
+                        if (create_overlay_translation_text.overlay_full_translation_text_container != null) {
+                            create_overlay_translation_text.overlay_full_translation_text.setVisibility(View.INVISIBLE);
+                            create_overlay_translation_text.overlay_full_translation_text_container.setVisibility(View.INVISIBLE);
+                        }
                     }
                 }
             });
@@ -862,8 +626,8 @@ public class AudioCaptureService extends Service {
                 }
 
                 handler.post(() -> {
-                    translatedLastVoiceString = TRANSLATION.toString();
-                    translatedLastVoiceString = translatedLastVoiceString.substring(0, 1).toUpperCase() + translatedLastVoiceString.substring(1);
+                    TRANSLATION_TEXT.STRING = TRANSLATION.toString();
+                    TRANSLATION_TEXT.STRING = TRANSLATION_TEXT.STRING.substring(0, 1).toUpperCase() + TRANSLATION_TEXT.STRING.substring(1);
                     if (RECOGNIZING_STATUS.IS_RECOGNIZING) {
                         if (create_overlay_translation_text.overlay_translation_text_container != null) {
                             create_overlay_translation_text.overlay_translation_text_container.setVisibility(View.VISIBLE);
@@ -872,14 +636,25 @@ public class AudioCaptureService extends Service {
                             create_overlay_translation_text.overlay_translation_text.setBackgroundColor(Color.TRANSPARENT);
                             create_overlay_translation_text.overlay_translation_text.setTextIsSelectable(true);
                             create_overlay_translation_text.overlay_translation_text.setHighlightColor(Color.TRANSPARENT);
-                            create_overlay_translation_text.overlay_translation_text.setText(translatedLastVoiceString);
+                            create_overlay_translation_text.overlay_translation_text.setText(TRANSLATION_TEXT.STRING);
                             create_overlay_translation_text.overlay_translation_text.setSelection(create_overlay_translation_text.overlay_translation_text.getText().length());
                             create_overlay_translation_text.overlay_translation_text.setTextColor(Color.parseColor("#FFFF00"));
                             //android.util.Log.d("SubtitleDebug", "textColor=" + Integer.toHexString(create_overlay_translation_text.overlay_translation_text.getCurrentTextColor()) + ", alpha=" + create_overlay_translation_text.overlay_translation_text.getAlpha() + ", layerType=" + create_overlay_translation_text.overlay_translation_text.getLayerType() + ", backgroundAlpha=" + (create_overlay_translation_text.overlay_translation_text.getBackground() != null ? create_overlay_translation_text.overlay_translation_text.getBackground().getAlpha() : -1));
-                            Spannable spannableString = new SpannableStringBuilder(translatedLastVoiceString);
+                            // 1. Makes Spannable
+                            Spannable spannableString = new SpannableStringBuilder(TRANSLATION_TEXT.STRING);
+                            // 2. Validate the index to ensure it does not exceed the text length (prevents crashes)
+                            int textLength = TRANSLATION_TEXT.STRING.length();
                             int selectionEnd = create_overlay_translation_text.overlay_translation_text.getSelectionEnd();
-                            spannableString.setSpan(new ForegroundColorSpan(Color.parseColor("#FFFF00")), 0, selectionEnd,0);
-                            spannableString.setSpan(new BackgroundColorSpan(Color.parseColor("#80000000")), 0, selectionEnd, 0);
+                            int safeEnd = Math.max(0, Math.min(selectionEnd, textLength)); // Safe from IndexOutOfBounds
+                            // 3. Apply Span using safeEnd
+                            spannableString.setSpan(new ForegroundColorSpan(Color.parseColor("#FFFF00")),
+                                    0,
+                                    safeEnd,
+                                    Spannable.SPAN_EXCLUSIVE_EXCLUSIVE); // Use valid standard flags
+                            spannableString.setSpan(new BackgroundColorSpan(Color.parseColor("#80000000")),
+                                    0,
+                                    safeEnd,
+                                    Spannable.SPAN_EXCLUSIVE_EXCLUSIVE);
                             create_overlay_translation_text.overlay_translation_text.setText(spannableString);
                             create_overlay_translation_text.overlay_translation_text.setSelection(create_overlay_translation_text.overlay_translation_text.getText().length());
                         }
@@ -890,10 +665,28 @@ public class AudioCaptureService extends Service {
                             create_overlay_translation_text.overlay_full_translation_text.setBackgroundColor(Color.TRANSPARENT);
                             create_overlay_translation_text.overlay_full_translation_text.setTextIsSelectable(true);
                             create_overlay_translation_text.overlay_full_translation_text.setHighlightColor(Color.TRANSPARENT);
-                            appendText(create_overlay_translation_text.overlay_full_translation_text, "\n" + translatedLastVoiceString);
+                            appendText(create_overlay_translation_text.overlay_full_translation_text, "\n" + TRANSLATION_TEXT.STRING);
                             create_overlay_translation_text.overlay_full_translation_text.setSelection(create_overlay_translation_text.overlay_full_translation_text.getText().length());
                             create_overlay_translation_text.overlay_full_translation_text.setTextColor(Color.parseColor("#FF00FFFF"));
+                            // 1. Makes Spannable
+                            Spannable spannableString = new SpannableStringBuilder(TRANSLATION_TEXT.STRING);
+                            // 2. Validate the index to ensure it does not exceed the text length (prevents crashes)
+                            int textLength = TRANSLATION_TEXT.STRING.length();
+                            int selectionEnd = create_overlay_translation_text.overlay_translation_text.getSelectionEnd();
+                            int safeEnd = Math.max(0, Math.min(selectionEnd, textLength)); // Safe from IndexOutOfBounds
+                            // 3. Apply Span using safeEnd
+                            spannableString.setSpan(new ForegroundColorSpan(Color.parseColor("#FFFF00")),
+                                    0,
+                                    safeEnd,
+                                    Spannable.SPAN_EXCLUSIVE_EXCLUSIVE); // Use valid standard flags
+                            spannableString.setSpan(new BackgroundColorSpan(Color.parseColor("#80000000")),
+                                    0,
+                                    safeEnd,
+                                    Spannable.SPAN_EXCLUSIVE_EXCLUSIVE);
+                            create_overlay_translation_text.overlay_translation_text.setText(spannableString);
+                            create_overlay_translation_text.overlay_translation_text.setSelection(create_overlay_translation_text.overlay_translation_text.getText().length());
                             create_overlay_translation_text.overlay_full_translation_text.setGravity(Gravity.BOTTOM);
+
                         }
                     } else {
                         if (create_overlay_translation_text.overlay_translation_text_container != null) {
@@ -982,15 +775,11 @@ public class AudioCaptureService extends Service {
                                 VOICE_TEXT.STRING = finalText.substring(0, 1).toUpperCase() + finalText.substring(1);
                                 MainActivity.voice_text.setText(VOICE_TEXT.STRING);
                                 MainActivity.voice_text.setSelection(MainActivity.voice_text.getText().length());
-                                if (!VOICE_TEXT.STRING.isEmpty()) {
-                                    lastVoiceString = VOICE_TEXT.STRING;
-                                    Log.d(TAG, "onEndOfSpeech: lastVoiceString = VOICE_TEXT.STRING = " + lastVoiceString);
-                                }
-                                if (MainActivity.full_voice_text != null && !lastVoiceString.isEmpty()) {
-                                    appendText(MainActivity.full_voice_text, "\n" + lastVoiceString);
+                                if (MainActivity.full_voice_text != null && !VOICE_TEXT.STRING.isEmpty()) {
+                                    appendText(MainActivity.full_voice_text, "\n" + VOICE_TEXT.STRING);
                                     MainActivity.full_voice_text.setSelection(MainActivity.full_voice_text.getText().length());
                                     MainActivity.full_voice_text.setGravity(Gravity.BOTTOM);
-                                    if (lastVoiceString != null && !Objects.equals(lastVoiceString, "")) {
+                                    if (VOICE_TEXT.STRING != null && !Objects.equals(VOICE_TEXT.STRING, "")) {
                                         // =================================================
                                         // ENDPOINT TEST HAS NOT FINISHED YET
                                         // =================================================
@@ -1003,14 +792,14 @@ public class AudioCaptureService extends Service {
                                         // =================================================
                                         if (GOOGLE_TRANSLATE_ENDPOINT.CONFIG == 1) {
                                             //Log.d("testGoogleTranslate", "Using FullGoogleTranslate1");
-                                            FullGoogleTranslate1(lastVoiceString, LANGUAGE.SRC, LANGUAGE.DST);
+                                            FullGoogleTranslate1(VOICE_TEXT.STRING, LANGUAGE.SRC, LANGUAGE.DST);
                                         }
                                         // =================================================
                                         // ENDPOINT 2 SUCCESS
                                         // =================================================
                                         else if (GOOGLE_TRANSLATE_ENDPOINT.CONFIG == 2) {
                                             //Log.d("testGoogleTranslate", "Using FullGoogleTranslate2");
-                                            FullGoogleTranslate2(lastVoiceString, LANGUAGE.SRC, LANGUAGE.DST);
+                                            FullGoogleTranslate2(VOICE_TEXT.STRING, LANGUAGE.SRC, LANGUAGE.DST);
 
                                         }
                                         // =================================================
@@ -1022,7 +811,6 @@ public class AudioCaptureService extends Service {
                                             create_overlay_translation_text.overlay_full_translation_text_container.setVisibility(View.INVISIBLE);
                                         }
                                     }
-                                    lastVoiceString = "";
                                 }
                             });
                         }
@@ -1183,6 +971,7 @@ public class AudioCaptureService extends Service {
         }
 
         startAudioCaptureForeground();
+
         int resultCode = intent.getIntExtra(EXTRA_RESULT_CODE, -1);
         Intent resultData = intent.getParcelableExtra(EXTRA_RESULT_DATA);
         Log.i(
@@ -1347,7 +1136,6 @@ public class AudioCaptureService extends Service {
     private void stopAudioCapture() {
         startPending = false;
         RECOGNIZING_STATUS.IS_RECOGNIZING = false;
-        stopTranslationTimer();
         if (audioRecord != null) {
             try {
                 if (audioRecord.getRecordingState() == AudioRecord.RECORDSTATE_RECORDING) {
@@ -1370,64 +1158,6 @@ public class AudioCaptureService extends Service {
         }
 
         Log.i(TAG, "Stopped AudioPlaybackCapture recording");
-    }
-
-    private void startTranslationTimer() {
-        timer = new Timer();
-        timerTask = new TimerTask() {
-
-            @Override
-            public void run() {
-
-                if (VOICE_TEXT.STRING != null && !Objects.equals(VOICE_TEXT.STRING, "")) {
-                    // =================================================
-                    // ENDPOINT TEST HAS NOT FINISHED YET
-                    // =================================================
-                    if (GOOGLE_TRANSLATE_ENDPOINT.CONFIG == 0) {
-                        Log.d("GoogleTranslator", "Waiting for endpoint test..." );
-                        return;
-                    }
-                    // =================================================
-                    // ENDPOINT 1 SUCCESS
-                    // =================================================
-                    if (GOOGLE_TRANSLATE_ENDPOINT.CONFIG == 1) {
-                        Log.d("GoogleTranslator", "Using GoogleTranslate1");
-                        GoogleTranslate1(VOICE_TEXT.STRING, LANGUAGE.SRC, LANGUAGE.DST);
-                    }
-                    // =================================================
-                    // ENDPOINT 2 SUCCESS
-                    // =================================================
-                    else if (GOOGLE_TRANSLATE_ENDPOINT.CONFIG == 2) {
-                        Log.d("GoogleTranslator", "Using GoogleTranslate2");
-                        GoogleTranslate2(VOICE_TEXT.STRING, LANGUAGE.SRC, LANGUAGE.DST);
-                    }
-                    // =================================================
-                    // BOTH ENDPOINT FAILED
-                    // =================================================
-                    else if (GOOGLE_TRANSLATE_ENDPOINT.CONFIG == -1) {
-                        Log.e("GoogleTranslator", "No working Google Translate endpoint" );
-                    }
-                }
-            }
-        };
-        timer.schedule(timerTask,0,2000);
-    }
-
-    private void stopTranslationTimer() {
-        // =========================================================
-        // STOP TRANSLATION TIMER
-        // =========================================================
-        if (timerTask != null) {
-            timerTask.cancel();
-            timerTask = null;
-        }
-
-        if (timer != null) {
-            timer.cancel();
-            timer.purge();
-            timer = null;
-        }
-
     }
 
     private void appendText(final TextView tv, final String text){

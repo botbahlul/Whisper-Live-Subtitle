@@ -484,7 +484,7 @@ public class MainActivity extends AppCompatActivity {
 
         audio = (AudioManager) getApplicationContext().getSystemService(Context.AUDIO_SERVICE);
         mStreamVolume = audio.getStreamVolume(AudioManager.STREAM_NOTIFICATION);
-        setVolumeControlStream(AudioManager.MODE_IN_COMMUNICATION);
+        audio.setStreamVolume(AudioManager.STREAM_NOTIFICATION, 0, 0);
         audio.setSpeakerphoneOn(true);
 
         display = new DisplayMetrics();
@@ -545,10 +545,6 @@ public class MainActivity extends AppCompatActivity {
                         return;
                     }
                     startAudioCaptureServiceReady(result.getResultCode(),data);
-                    //Intent serviceIntent = new Intent(this, AudioCaptureService.class);
-                    //serviceIntent.putExtra("whisper.app.livesubtitle.MEDIA_PROJECTION_RESULT_CODE", result.getResultCode());
-                    //serviceIntent.putExtra("whisper.app.livesubtitle.MEDIA_PROJECTION_RESULT_DATA", data);
-                    //startForegroundService(serviceIntent);
                 }
         );
 
@@ -620,12 +616,12 @@ public class MainActivity extends AppCompatActivity {
         spinner_src_languages.setOnItemSelectedListener(new AdapterView.OnItemSelectedListener() {
                     @Override
                     public void onItemSelected(AdapterView<?> adapterView,View view, int i, long l) {
-                        // Simpan bahasa source sebelum diubah.
+                        // Save the source language before changing.
                         String oldSrcDialect = LANGUAGE.SRC_DIALECT;
 
-                        // Simpan status mic sebelum perubahan bahasa.
-                        // true  = mic_button sedang ON / ASR sedang berjalan
-                        // false = mic_button sedang OFF
+                        // Save the mic status before the language change.
+                        // true  = mic_button is ON / ASR is running
+                        // false = mic_button is OFF
                         boolean wasRecognizing = RECOGNIZING_STATUS.IS_RECOGNIZING;
 
                         if (spinner_src_languages != null && spinner_src_languages.getSelectedItem() != null) {
@@ -652,34 +648,32 @@ public class MainActivity extends AppCompatActivity {
                         voice_text.setHeight((int) (h * getResources().getDisplayMetrics().density));
                         full_voice_text.setHeight((int) (h * getResources().getDisplayMetrics().density));
 
-                         // Spinner pertama kali memanggil onItemSelected()
-                         // Jangan restart AudioCaptureService pada pemanggilan pertama saat Activity baru dibuat.
+                        // The Spinner calls onItemSelected() for the first time
+                        // Do not restart AudioCaptureService during this initial call when the Activity is first created
                         if (!sourceLanguageSpinnerInitialized) {
                             sourceLanguageSpinnerInitialized = true;
                             return;
                         }
 
-                         // CEK APAKAH SOURCE LANGUAGE BENAR-BENAR BERUBAH
+                        // CHECK WHETHER THE SOURCE LANGUAGE HAS ACTUALLY CHANGED
                         boolean languageChanged = !Objects.equals(oldSrcDialect, LANGUAGE.SRC_DIALECT);
 
                         /*
                          * =========================================================
-                         * KALAU OVERLAY AKTIF DAN BAHASA BERUBAH
+                         * IF THE OVERLAY IS ACTIVE AND THE LANGUAGE CHANGES
                          *
-                         * JANGAN:
+                         * DO NOT:
+                         * - stop the overlay
+                         * - recreate the overlay
+                         * - request MediaProjection again
+                         * - call startActivity()
                          *
-                         * - stop overlay
-                         * - membuat overlay lagi
-                         * - meminta MediaProjection lagi
-                         * - startActivity()
+                         * Simply notify the AudioCaptureService that the language has changed.
                          *
-                         * Cukup beri tahu AudioCaptureService bahwa bahasa berubah.
-                         *
-                         * AudioCaptureService sendiri akan melihat apakah
-                         * RECOGNIZING_STATUS.IS_RECOGNIZING sebelumnya true/false.
+                         * The AudioCaptureService itself will determine whether
+                         * RECOGNIZING_STATUS.IS_RECOGNIZING was previously true or false.
                          * =========================================================
                          */
-
                         if (languageChanged && MIC_BUTTON_STATUS.IS_OVERLAYING) {
                             Intent serviceIntent = new Intent(MainActivity.this, AudioCaptureService.class);
                             serviceIntent.setAction(AudioCaptureService.ACTION_LANGUAGE_CHANGED);
@@ -691,7 +685,6 @@ public class MainActivity extends AppCompatActivity {
                          * UPDATE DEBUG STATUS
                          * =========================================================
                          */
-
                         RECOGNIZING_STATUS.STRING = "RECOGNIZING_STATUS.IS_RECOGNIZING = " + RECOGNIZING_STATUS.IS_RECOGNIZING;
                         setText(textview_recognizing, RECOGNIZING_STATUS.STRING);
                         MIC_BUTTON_STATUS.STRING = "MIC_BUTTON_STATUS.IS_OVERLAYING = " + MIC_BUTTON_STATUS.IS_OVERLAYING;
@@ -760,7 +753,7 @@ public class MainActivity extends AppCompatActivity {
                     if (Settings.canDrawOverlays(getApplicationContext())) {
                         start_create_overlay_mic_button();
                         start_create_overlay_translation_text();
-                        // Minta MediaProjection SEKALI untuk seluruh masa hidup overlay
+                        // Request MediaProjection ONCE for the entire lifetime of the overlay
                         requestMediaProjectionForOverlay();
                     } else {
                         Handler handler = new Handler(Looper.getMainLooper());
@@ -774,8 +767,8 @@ public class MainActivity extends AppCompatActivity {
                                 MIC_BUTTON_STATUS.IS_OVERLAYING = true;
                                 String os = "Overlay permission granted";
                                 setText(textview_output_messages, os);
-                                // Setelah overlay permission tersedia,
-                                // baru minta MediaProjection.
+                                // Once the overlay permission is available,
+                                // then request MediaProjection.
                                 requestMediaProjectionForOverlay();
                             } else {
                                 MIC_BUTTON_STATUS.IS_OVERLAYING = false;
@@ -801,7 +794,7 @@ public class MainActivity extends AppCompatActivity {
                     setText(voice_text, "");
                     voice_text.setHint("Recognized words");
                     full_voice_text.setHint("Recognized sentences");
-                    audio.setStreamVolume(AudioManager.STREAM_NOTIFICATION, (int)Double.parseDouble(String.valueOf((long)(audio.getStreamMaxVolume(AudioManager.STREAM_NOTIFICATION) / 2))), 0);
+                    audio.setStreamVolume(AudioManager.STREAM_NOTIFICATION, mStreamVolume, 0);
                     if (create_overlay_translation_text.overlay_translation_text != null) {
                         setText(create_overlay_translation_text.overlay_translation_text, "");
                         create_overlay_translation_text.overlay_translation_text.setVisibility(View.INVISIBLE);
@@ -833,7 +826,8 @@ public class MainActivity extends AppCompatActivity {
         stop_create_overlay_translation_text();
         stop_create_overlay_mic_button();
         stop_voice_recognizer();
-        audio.setStreamVolume(AudioManager.STREAM_NOTIFICATION, mStreamVolume, AudioManager.ADJUST_SAME);
+        //audio.setStreamVolume(AudioManager.STREAM_NOTIFICATION, mStreamVolume, AudioManager.ADJUST_SAME);
+        audio.setStreamVolume(AudioManager.STREAM_NOTIFICATION, mStreamVolume, 0);
         finish();
     }
 
@@ -844,20 +838,8 @@ public class MainActivity extends AppCompatActivity {
         stop_create_overlay_translation_text();
         stop_create_overlay_mic_button();
         stop_voice_recognizer();
-        audio.setStreamVolume(AudioManager.STREAM_NOTIFICATION, mStreamVolume, AudioManager.ADJUST_SAME);
-    }
-
-    public void setup_src_spinner_bak(ArrayList<String> supported_languages)
-    {
-        src_countries_dialects = new HashMap<>();
-        for (int i=0;i<supported_languages.size();i++) {
-            src_countries_dialects.put(supported_languages.get(i), src_dialects[i]);
-        }
-        Collections.sort(supported_languages);
-        ArrayAdapter<String> adapter = new ArrayAdapter<>(this, R.layout.spinner_textview_align, supported_languages);
-        adapter.setDropDownViewResource(R.layout.spinner_textview_align);
-        spinner_src_languages.setAdapter(adapter);
-        spinner_src_languages.setSelection(supported_languages.indexOf("Indonesian"));
+        //audio.setStreamVolume(AudioManager.STREAM_NOTIFICATION, mStreamVolume, AudioManager.ADJUST_SAME);
+        audio.setStreamVolume(AudioManager.STREAM_NOTIFICATION, mStreamVolume, 0);
     }
 
     public void setup_src_spinner(ArrayList<String> supported_languages) {
@@ -886,14 +868,6 @@ public class MainActivity extends AppCompatActivity {
         adapter.setDropDownViewResource(R.layout.spinner_textview_align);
         spinner_src_languages.setAdapter(adapter);
         spinner_src_languages.setSelection(supported_languages.indexOf("Indonesian"));
-    }
-
-    public void setup_dst_spinner_bak(ArrayList<String> supported_languages) {
-        Collections.sort(supported_languages);
-        ArrayAdapter<String> adapter = new ArrayAdapter<>(this, R.layout.spinner_textview_align, supported_languages);
-        adapter.setDropDownViewResource(R.layout.spinner_textview_align);
-        spinner_dst_languages.setAdapter(adapter);
-        spinner_dst_languages.setSelection(supported_languages.indexOf("English"));
     }
 
     public void setup_dst_spinner(ArrayList<String> supported_languages) {
@@ -976,7 +950,7 @@ public class MainActivity extends AppCompatActivity {
 
         for (int i = 0; i < supportedLanguages.size(); i++) {
             String displayName = supportedLanguages.get(i);
-            String dialectCode = src_countries_dialects.get(displayName); // Menghasilkan "id-ID", "id", atau "en-US"
+            String dialectCode = src_countries_dialects.get(displayName); // Returns "id-ID", "id", or "en-US"
 
             if (dialectCode != null) {
                 if (dialectCode.equalsIgnoreCase(targetDialectCode)) {

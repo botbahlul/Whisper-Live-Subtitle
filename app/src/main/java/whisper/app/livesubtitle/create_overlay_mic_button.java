@@ -54,11 +54,14 @@ public class create_overlay_mic_button extends Service {
             MainActivity.full_voice_text.setText("");
             MainActivity.full_voice_text.setHint("Recognized sentences");
             //MainActivity.audio.setStreamVolume(AudioManager.STREAM_NOTIFICATION, (int)Double.parseDouble(String.valueOf((long)(MainActivity.audio.getStreamMaxVolume(AudioManager.STREAM_NOTIFICATION) / 2))), 0);
+            MainActivity.audio.setStreamVolume(AudioManager.STREAM_NOTIFICATION, MainActivity.mStreamVolume, 0);
             if (create_overlay_translation_text.overlay_translation_text != null) {
-                setText(create_overlay_translation_text.overlay_translation_text, "");
+                create_overlay_translation_text.overlay_translation_text.setText("");
                 create_overlay_translation_text.overlay_translation_text.setVisibility(View.INVISIBLE);
                 create_overlay_translation_text.overlay_translation_text_container.setVisibility(View.INVISIBLE);
-                setText(create_overlay_translation_text.overlay_full_translation_text, "");
+            }
+            if (create_overlay_translation_text.overlay_full_translation_text != null) {
+                create_overlay_translation_text.overlay_full_translation_text.setText("");
                 create_overlay_translation_text.overlay_full_translation_text.setVisibility(View.INVISIBLE);
                 create_overlay_translation_text.overlay_full_translation_text_container.setVisibility(View.INVISIBLE);
             }
@@ -108,25 +111,35 @@ public class create_overlay_mic_button extends Service {
                             mic_button.setImageResource(R.drawable.ic_mic_black_off);
                             VOICE_TEXT.STRING = "";
                             TRANSLATION_TEXT.STRING = "";
-                            setText(create_overlay_translation_text.overlay_translation_text, "");
-                            create_overlay_translation_text.overlay_translation_text.setVisibility(View.INVISIBLE);
-                            create_overlay_translation_text.overlay_translation_text_container.setVisibility(View.INVISIBLE);
-                            setText(create_overlay_translation_text.overlay_full_translation_text, "");
-                            create_overlay_translation_text.overlay_full_translation_text.setVisibility(View.INVISIBLE);
-                            create_overlay_translation_text.overlay_full_translation_text_container.setVisibility(View.INVISIBLE);
+                            if (create_overlay_translation_text.overlay_translation_text_container != null) {
+                                setText(create_overlay_translation_text.overlay_translation_text, "");
+                                create_overlay_translation_text.overlay_translation_text.setVisibility(View.INVISIBLE);
+                                create_overlay_translation_text.overlay_translation_text_container.setVisibility(View.INVISIBLE);
+                            }
+                            if (create_overlay_translation_text.overlay_full_translation_text_container != null) {
+                                setText(create_overlay_translation_text.overlay_full_translation_text, "");
+                                create_overlay_translation_text.overlay_full_translation_text.setVisibility(View.INVISIBLE);
+                                create_overlay_translation_text.overlay_full_translation_text_container.setVisibility(View.INVISIBLE);
+                            }
                             MainActivity.voice_text.setText("");
                             MainActivity.full_voice_text.setText("");
-                            MainActivity.audio.setStreamVolume(AudioManager.STREAM_NOTIFICATION, MainActivity.mStreamVolume, AudioManager.FLAG_REMOVE_SOUND_AND_VIBRATE);
+                            //MainActivity.audio.setStreamVolume(AudioManager.STREAM_NOTIFICATION, MainActivity.mStreamVolume, AudioManager.FLAG_REMOVE_SOUND_AND_VIBRATE);
+                            MainActivity.audio.setStreamVolume(AudioManager.STREAM_NOTIFICATION, MainActivity.mStreamVolume, 0);
                         } else {
+                            //MainActivity.audio.setStreamVolume(AudioManager.STREAM_NOTIFICATION, 0, AudioManager.FLAG_REMOVE_SOUND_AND_VIBRATE);
                             MainActivity.audio.setStreamVolume(AudioManager.STREAM_NOTIFICATION, 0, AudioManager.FLAG_REMOVE_SOUND_AND_VIBRATE);
                             start_voice_recognizer();
                             mic_button.setImageResource(R.drawable.ic_mic_black_on);
                             if (TRANSLATION_TEXT.STRING.length() == 0) {
-                                create_overlay_translation_text.overlay_translation_text.setVisibility(View.INVISIBLE);
-                                create_overlay_translation_text.overlay_translation_text_container.setVisibility(View.INVISIBLE);
+                                if (create_overlay_translation_text.overlay_translation_text_container != null) {
+                                    create_overlay_translation_text.overlay_translation_text.setVisibility(View.INVISIBLE);
+                                    create_overlay_translation_text.overlay_translation_text_container.setVisibility(View.INVISIBLE);
+                                }
                             } else {
-                                create_overlay_translation_text.overlay_translation_text_container.setVisibility(View.VISIBLE);
-                                create_overlay_translation_text.overlay_translation_text.setVisibility(View.VISIBLE);
+                                if (create_overlay_translation_text.overlay_translation_text_container != null) {
+                                    create_overlay_translation_text.overlay_translation_text_container.setVisibility(View.VISIBLE);
+                                    create_overlay_translation_text.overlay_translation_text.setVisibility(View.VISIBLE);
+                                }
                             }
                         }
                     }
